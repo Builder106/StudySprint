@@ -1,6 +1,6 @@
-# StudyQuill
+# StudySprint
 
-StudyQuill is now an exact copy of the `web103_finalproject/prototype` frontend prototype.
+StudySprint is now an exact copy of the `web103_finalproject/prototype` frontend prototype.
 
 ## What’s included
 
@@ -10,7 +10,7 @@ StudyQuill is now an exact copy of the `web103_finalproject/prototype` frontend 
 
 ## Local development
 
-1. `cd StudyQuill`
+1. `cd StudySprint`
 2. `npm install`
 3. `npm run dev`
 
