@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
+import { LogoMark } from "./shared/Logo";
 
 export function Landing() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ export function Landing() {
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-zinc-900 dark:text-zinc-50 font-sans selection:bg-[#ccff00] selection:text-black flex flex-col">
       <header className="px-8 py-6 flex justify-between items-center border-b border-zinc-200 dark:border-white/10">
         <div className="font-medium text-lg tracking-tight flex items-center gap-2">
-          <div className="w-4 h-4 bg-[#ccff00] rounded-full"></div>
+          <LogoMark size={28} />
           StudySprint
         </div>
         <button

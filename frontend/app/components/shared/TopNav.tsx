@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/lib/auth";
+import { LogoMark } from "./Logo";
 
 export function TopNav({ right }: { right?: ReactNode }) {
   const { user, logout } = useAuth();
@@ -14,7 +15,7 @@ export function TopNav({ right }: { right?: ReactNode }) {
         to={user ? "/dashboard" : "/"}
         className="font-medium text-lg tracking-tight flex items-center gap-2 hover:opacity-80 transition-opacity"
       >
-        <div className="w-4 h-4 bg-[#ccff00] rounded-full"></div>
+        <LogoMark size={28} />
         StudySprint
       </Link>
 
