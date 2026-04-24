@@ -11,7 +11,7 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: false,
   retries: 0,
-  reporter: "list",
+  reporter: [["list"], ["./e2e/reporter.ts"]],
   use: {
     baseURL: process.env.BASE_URL ?? "http://localhost:5173",
     headless: true,
