@@ -7,6 +7,7 @@ import type { SessionQuality, StudySession } from "@/lib/types";
 interface Props {
   goalId: number | string;
   initialMinutes?: number;
+  initialNotes?: string;
   session?: StudySession | null;
   onClose: () => void;
   onSaved: (session: StudySession) => void;
@@ -20,7 +21,14 @@ const QUALITY_LABELS: Record<SessionQuality, { label: string; days: number }> = 
   5: { label: "Mastered", days: 14 },
 };
 
-export function SessionModal({ goalId, initialMinutes, session, onClose, onSaved }: Props) {
+export function SessionModal({
+  goalId,
+  initialMinutes,
+  initialNotes,
+  session,
+  onClose,
+  onSaved,
+}: Props) {
   const [hours, setHours] = useState<string>(
     session
       ? String(Math.round((session.duration_minutes / 60) * 10) / 10)
@@ -28,7 +36,7 @@ export function SessionModal({ goalId, initialMinutes, session, onClose, onSaved
         ? String(Math.round((initialMinutes / 60) * 10) / 10)
         : "1.0",
   );
-  const [notes, setNotes] = useState<string>(session?.notes ?? "");
+  const [notes, setNotes] = useState<string>(session?.notes ?? initialNotes ?? "");
   const [quality, setQuality] = useState<SessionQuality | null>(session?.quality ?? null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

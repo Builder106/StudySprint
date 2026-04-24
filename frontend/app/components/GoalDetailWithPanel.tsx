@@ -14,6 +14,7 @@ import { ProgressBar } from "./shared/ProgressBar";
 import { TopNav } from "./shared/TopNav";
 import { SessionModal } from "./shared/SessionModal";
 import { TimerCard } from "./shared/TimerCard";
+import { FocusTools, clearFocusNotes, readFocusNotes } from "./shared/FocusTools";
 
 export function GoalDetailWithPanel() {
   const { id } = useParams();
@@ -25,6 +26,7 @@ export function GoalDetailWithPanel() {
   const [showPanel, setShowPanel] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalInitialMinutes, setModalInitialMinutes] = useState<number | undefined>(undefined);
+  const [modalInitialNotes, setModalInitialNotes] = useState<string>("");
 
   const [editing, setEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -67,7 +69,9 @@ export function GoalDetailWithPanel() {
   };
 
   const openLogSession = (suggestedMinutes: number) => {
+    if (!id) return;
     setModalInitialMinutes(suggestedMinutes > 0 ? suggestedMinutes : undefined);
+    setModalInitialNotes(readFocusNotes(id));
     setShowModal(true);
   };
 
@@ -83,6 +87,8 @@ export function GoalDetailWithPanel() {
     });
     setShowModal(false);
     setModalInitialMinutes(undefined);
+    setModalInitialNotes("");
+    if (id) clearFocusNotes(id);
     reload().catch(() => {});
   };
 
@@ -204,12 +210,14 @@ export function GoalDetailWithPanel() {
             </Link>
 
             <div className="flex flex-col lg:flex-row gap-16 xl:gap-24">
-              <div className="flex-1 lg:max-w-xl">
-                <h1 className="text-3xl md:text-5xl font-medium tracking-tighter text-zinc-900 dark:text-zinc-50 leading-[1.1] mb-8">
+              <div className="flex-1 lg:max-w-xl space-y-12">
+                <h1 className="text-3xl md:text-5xl font-medium tracking-tighter text-zinc-900 dark:text-zinc-50 leading-[1.1]">
                   {goal.title}
                 </h1>
 
                 <TimerCard onLogSession={openLogSession} />
+
+                <FocusTools goalId={goal.id} />
               </div>
 
               <div className="flex-1 space-y-16 max-w-sm xl:max-w-md">
@@ -474,9 +482,11 @@ export function GoalDetailWithPanel() {
         <SessionModal
           goalId={goal.id}
           initialMinutes={modalInitialMinutes}
+          initialNotes={modalInitialNotes}
           onClose={() => {
             setShowModal(false);
             setModalInitialMinutes(undefined);
+            setModalInitialNotes("");
           }}
           onSaved={onSessionSaved}
         />
