@@ -12,7 +12,7 @@ const upload = multer({
 });
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free";
+const DEFAULT_MODEL = "openrouter/free";
 const MAX_INPUT_CHARS = 20000;
 
 const SYSTEM_PROMPT = `You extract structured study goals from course syllabi.
