@@ -15,6 +15,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.BASE_URL ?? "http://localhost:5173",
     headless: true,
+    viewport: { width: 1920, height: 1080 },
     screenshot: "only-on-failure",
     video: "on",
   },
