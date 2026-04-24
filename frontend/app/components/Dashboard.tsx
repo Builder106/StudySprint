@@ -3,14 +3,27 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, ChevronRight, Activity } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { minutesToHours, progressPercent } from "@/lib/format";
-import type { Goal } from "@/lib/types";
+import type { Goal, GoalStatus } from "@/lib/types";
 import { StatusBadge } from "./shared/StatusBadge";
 import { ProgressBar } from "./shared/ProgressBar";
 import { TopNav } from "./shared/TopNav";
 
+type StatusFilter = "All" | GoalStatus;
+type SortKey = "recent" | "logged" | "remaining" | "progress";
+
+const STATUS_FILTERS: StatusFilter[] = ["All", "Active", "Paused", "Completed"];
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "recent", label: "Recent" },
+  { value: "logged", label: "Most logged" },
+  { value: "remaining", label: "Least remaining" },
+  { value: "progress", label: "Most progress" },
+];
+
 export function Dashboard() {
   const [goals, setGoals] = useState<Goal[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
+  const [sortKey, setSortKey] = useState<SortKey>("recent");
 
   useEffect(() => {
     api
@@ -29,6 +42,38 @@ export function Dashboard() {
     );
     return { active, hours };
   }, [goals]);
+
+  const visibleGoals = useMemo(() => {
+    if (!goals) return null;
+    const filtered =
+      statusFilter === "All" ? goals : goals.filter((g) => g.status === statusFilter);
+    const sorted = [...filtered];
+    switch (sortKey) {
+      case "logged":
+        sorted.sort((a, b) => b.logged_minutes - a.logged_minutes);
+        break;
+      case "remaining":
+        sorted.sort((a, b) => {
+          const aRem = Math.max(0, Number(a.target_hours) * 60 - a.logged_minutes);
+          const bRem = Math.max(0, Number(b.target_hours) * 60 - b.logged_minutes);
+          return aRem - bRem;
+        });
+        break;
+      case "progress":
+        sorted.sort(
+          (a, b) =>
+            progressPercent(b.logged_minutes, b.target_hours) -
+            progressPercent(a.logged_minutes, a.target_hours),
+        );
+        break;
+      case "recent":
+      default:
+        sorted.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
+    }
+    return sorted;
+  }, [goals, statusFilter, sortKey]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-zinc-900 dark:text-zinc-50 font-sans selection:bg-[#ccff00] selection:text-black">
@@ -104,8 +149,61 @@ export function Dashboard() {
         )}
 
         {goals && goals.length > 0 && (
-          <div className="border-t border-zinc-200 dark:border-white/10">
-            {goals.map((goal) => {
+          <div
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-zinc-200 dark:border-white/10"
+            role="toolbar"
+            aria-label="Filter and sort goals"
+          >
+            <div className="flex items-center gap-2 flex-wrap" role="group" aria-label="Filter by status">
+              {STATUS_FILTERS.map((status) => {
+                const count =
+                  status === "All"
+                    ? goals.length
+                    : goals.filter((g) => g.status === status).length;
+                const active = statusFilter === status;
+                return (
+                  <button
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    aria-pressed={active}
+                    className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full border transition-colors ${
+                      active
+                        ? "border-[#ccff00] bg-[#ccff00]/10 text-[#ccff00]"
+                        : "border-zinc-200 dark:border-white/10 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50"
+                    }`}
+                  >
+                    {status}
+                    <span className="ml-1.5 opacity-60 tabular-nums">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <label className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+              Sort
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                className="bg-transparent border border-zinc-200 dark:border-white/10 rounded-full px-3 py-1.5 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-[#ccff00]"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value} className="bg-white dark:bg-[#0a0a0a]">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
+
+        {visibleGoals && visibleGoals.length === 0 && goals && goals.length > 0 && (
+          <div className="py-16 text-center text-xs font-bold text-zinc-500 uppercase tracking-widest">
+            No {statusFilter === "All" ? "" : statusFilter.toLowerCase() + " "}goals match.
+          </div>
+        )}
+
+        {visibleGoals && visibleGoals.length > 0 && (
+          <div className="border-b border-zinc-200 dark:border-white/10">
+            {visibleGoals.map((goal) => {
               const percent = progressPercent(goal.logged_minutes, goal.target_hours);
               const logged = minutesToHours(goal.logged_minutes);
               const target = Number(goal.target_hours);
