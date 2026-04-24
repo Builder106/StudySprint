@@ -107,9 +107,8 @@ Given(
 When(
   "I right-click on the {string} goal row",
   async ({ page }, title: string) => {
-    const row = page.locator("li, [data-radix-context-menu-trigger]").filter({
-      hasText: title,
-    });
+    // ContextMenuTrigger uses asChild, so the trigger IS the <a> link — no wrapper element.
+    const row = page.locator('a[href*="/goal/"]').filter({ hasText: title });
     await row.first().click({ button: "right" });
   },
 );

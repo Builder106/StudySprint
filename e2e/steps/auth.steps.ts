@@ -16,7 +16,11 @@ When("I navigate to the registration page", async ({ page }) => {
 When(
   "I enter the email {string} and password {string}",
   async ({ page }, email: string, password: string) => {
-    await page.fill('input[type="email"]', email);
+    // Append a run-unique suffix so repeated test runs don't hit "email already registered".
+    const uniqueEmail = email.startsWith("e2e_")
+      ? email.replace("@", `_${Date.now()}@`)
+      : email;
+    await page.fill('input[type="email"]', uniqueEmail);
     await page.fill('input[type="password"]', password);
   },
 );
