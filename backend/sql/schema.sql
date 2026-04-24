@@ -57,3 +57,31 @@ CREATE TABLE IF NOT EXISTS user_google_tokens (
 
 ALTER TABLE study_sessions
   ADD COLUMN IF NOT EXISTS gcal_event_id TEXT;
+
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS display_name TEXT;
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT FALSE;
+
+CREATE TABLE IF NOT EXISTS study_rooms (
+  id            SERIAL PRIMARY KEY,
+  slug          TEXT UNIQUE NOT NULL,
+  name          TEXT NOT NULL,
+  description   TEXT,
+  passcode_hash TEXT,
+  created_by    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS room_members (
+  room_id   INTEGER NOT NULL REFERENCES study_rooms(id) ON DELETE CASCADE,
+  user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (room_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS room_members_user_id_idx ON room_members(user_id);

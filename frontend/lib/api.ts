@@ -199,6 +199,106 @@ export const api = {
       );
    },
 
+   getMyProfile() {
+      return request<{
+         user: {
+            id: number;
+            email: string;
+            username: string | null;
+            display_name: string | null;
+            bio: string | null;
+            is_public: boolean;
+         };
+      }>("/api/profiles/me");
+   },
+   updateMyProfile(input: {
+      username?: string;
+      display_name?: string | null;
+      bio?: string | null;
+      is_public?: boolean;
+   }) {
+      return request<{
+         user: {
+            id: number;
+            email: string;
+            username: string | null;
+            display_name: string | null;
+            bio: string | null;
+            is_public: boolean;
+         };
+      }>("/api/profiles/me", {
+         method: "PUT",
+         body: JSON.stringify(input),
+      });
+   },
+   getProfile(username: string) {
+      return request<{
+         user: { username: string; display_name: string; bio: string | null; joined_at: string };
+         stats: { total_minutes: number; total_sessions: number; total_goals: number };
+         recent_sessions: { duration_minutes: number; logged_at: string; goal_title: string }[];
+      }>(`/api/profiles/${encodeURIComponent(username)}`);
+   },
+   leaderboard() {
+      return request<{
+         entries: { username: string; display_name: string | null; weekly_minutes: number }[];
+      }>("/api/leaderboard");
+   },
+   listRooms() {
+      return request<{
+         rooms: {
+            slug: string;
+            name: string;
+            description: string | null;
+            created_at: string;
+            has_passcode: boolean;
+            member_count: number;
+         }[];
+      }>("/api/rooms");
+   },
+   createRoom(input: { name: string; description?: string; passcode?: string }) {
+      return request<{ slug: string }>("/api/rooms", {
+         method: "POST",
+         body: JSON.stringify(input),
+      });
+   },
+   getRoom(slug: string) {
+      return request<{
+         room: {
+            slug: string;
+            name: string;
+            description: string | null;
+            created_at: string;
+            is_owner: boolean;
+            has_passcode: boolean;
+         };
+         members: {
+            username: string | null;
+            display_name: string | null;
+            is_public: boolean;
+            joined_at: string;
+         }[];
+         recent_activity: {
+            id: number;
+            duration_minutes: number;
+            logged_at: string;
+            username: string | null;
+            display_name: string | null;
+            goal_title: string;
+         }[];
+      }>(`/api/rooms/${encodeURIComponent(slug)}`);
+   },
+   joinRoom(slug: string, passcode?: string) {
+      return request<{ ok: boolean }>(`/api/rooms/${encodeURIComponent(slug)}/join`, {
+         method: "POST",
+         body: JSON.stringify({ passcode }),
+      });
+   },
+   leaveRoom(slug: string) {
+      return request<void>(`/api/rooms/${encodeURIComponent(slug)}/leave`, {
+         method: "POST",
+      });
+   },
+
    async parseSyllabus(input: { text?: string; file?: File }) {
       const base = API_BASE;
       const headers = new Headers();

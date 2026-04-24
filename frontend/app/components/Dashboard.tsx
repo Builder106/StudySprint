@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, ChevronRight, Activity, BarChart3, Sparkles, Leaf } from "lucide-react";
+import { Plus, ChevronRight, Activity, BarChart3, Sparkles, Leaf, Users } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { minutesToHours, progressPercent } from "@/lib/format";
 import type { Goal, GoalStatus } from "@/lib/types";
@@ -105,6 +105,14 @@ export function Dashboard() {
       <TopNav
         right={
           <div className="flex items-center gap-3">
+            <Link
+              to="/community"
+              aria-label="Community"
+              className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-[#ccff00] transition-colors"
+            >
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Community</span>
+            </Link>
             <Link
               to="/garden"
               aria-label="Garden"

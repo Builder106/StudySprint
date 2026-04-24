@@ -6,6 +6,9 @@ import { GoalDetailWithPanel } from "./components/GoalDetailWithPanel";
 import { NewGoal } from "./components/NewGoal";
 import { Analytics } from "./components/Analytics";
 import { Garden } from "./components/Garden";
+import { Community } from "./components/Community";
+import { StudyRoom } from "./components/StudyRoom";
+import { PublicProfile } from "./components/PublicProfile";
 import { ProtectedRoute } from "./components/shared/ProtectedRoute";
 
 function RedirectToGoal() {
@@ -57,4 +60,21 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  {
+    path: "/community",
+    element: (
+      <ProtectedRoute>
+        <Community />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/rooms/:slug",
+    element: (
+      <ProtectedRoute>
+        <StudyRoom />
+      </ProtectedRoute>
+    ),
+  },
+  { path: "/u/:username", Component: PublicProfile },
 ]);
