@@ -44,3 +44,16 @@ ALTER TABLE study_sessions
   ADD COLUMN IF NOT EXISTS quality INTEGER CHECK (quality BETWEEN 1 AND 5);
 ALTER TABLE study_sessions
   ADD COLUMN IF NOT EXISTS next_review_at TIMESTAMPTZ;
+
+CREATE TABLE IF NOT EXISTS user_google_tokens (
+  user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  access_token  TEXT,
+  refresh_token TEXT,
+  expiry_date   BIGINT,
+  scope         TEXT,
+  connected_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE study_sessions
+  ADD COLUMN IF NOT EXISTS gcal_event_id TEXT;

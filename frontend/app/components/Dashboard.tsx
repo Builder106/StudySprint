@@ -8,6 +8,7 @@ import { StatusBadge } from "./shared/StatusBadge";
 import { ProgressBar } from "./shared/ProgressBar";
 import { TopNav } from "./shared/TopNav";
 import { SyllabusImport } from "./SyllabusImport";
+import { GoogleCalendarBadge } from "./shared/GoogleCalendarBadge";
 
 type StatusFilter = "All" | GoalStatus;
 type SortKey = "recent" | "logged" | "remaining" | "progress";
@@ -39,6 +40,23 @@ export function Dashboard() {
 
   useEffect(() => {
     loadGoals();
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("google");
+    if (status === "connected") setBanner("Google Calendar connected.");
+    else if (status === "denied") setBanner("Google Calendar connection cancelled.");
+    else if (status === "error") setBanner("Google Calendar connection failed. Try again.");
+    if (status) {
+      params.delete("google");
+      const qs = params.toString();
+      window.history.replaceState(
+        {},
+        "",
+        window.location.pathname + (qs ? `?${qs}` : ""),
+      );
+    }
   }, []);
 
   const stats = useMemo(() => {
@@ -144,21 +162,24 @@ export function Dashboard() {
             </p>
           </div>
 
-          <div className="flex gap-8 text-right">
-            <div>
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">
-                Active
+          <div className="flex flex-col items-end gap-4">
+            <GoogleCalendarBadge />
+            <div className="flex gap-8 text-right">
+              <div>
+                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">
+                  Active
+                </div>
+                <div className="text-3xl font-medium tracking-tighter text-[#ccff00]">
+                  {stats.active}
+                </div>
               </div>
-              <div className="text-3xl font-medium tracking-tighter text-[#ccff00]">
-                {stats.active}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">
-                Hours Logged
-              </div>
-              <div className="text-3xl font-medium tracking-tighter text-zinc-900 dark:text-zinc-50">
-                {stats.hours}
+              <div>
+                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">
+                  Hours Logged
+                </div>
+                <div className="text-3xl font-medium tracking-tighter text-zinc-900 dark:text-zinc-50">
+                  {stats.hours}
+                </div>
               </div>
             </div>
           </div>

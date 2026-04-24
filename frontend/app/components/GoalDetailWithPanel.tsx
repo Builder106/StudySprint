@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { ArrowLeft, Play, Pause, X, Edit2, Check } from "lucide-react";
+import { ArrowLeft, Play, Pause, X, Edit2, Check, Calendar, CheckCheck } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import {
   formatDate,
@@ -27,6 +27,8 @@ export function GoalDetailWithPanel() {
   const [showModal, setShowModal] = useState(false);
   const [modalInitialMinutes, setModalInitialMinutes] = useState<number | undefined>(undefined);
   const [modalInitialNotes, setModalInitialNotes] = useState<string>("");
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [exportingSessionId, setExportingSessionId] = useState<number | null>(null);
 
   const [editing, setEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -49,7 +51,27 @@ export function GoalDetailWithPanel() {
       .catch((err: unknown) =>
         setLoadError(err instanceof ApiError ? err.message : "Failed to load goal"),
       );
+    api
+      .googleStatus()
+      .then((s) => setGoogleConnected(s.connected))
+      .catch(() => setGoogleConnected(false));
   }, [id]);
+
+  const exportToCalendar = async (sessionId: number) => {
+    setExportingSessionId(sessionId);
+    try {
+      await api.googleExportSession(sessionId);
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === sessionId ? { ...s, gcal_event_id: "synced" } : s,
+        ),
+      );
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Calendar export failed");
+    } finally {
+      setExportingSessionId(null);
+    }
+  };
 
   useEffect(() => {
     if (!goal) return;
@@ -275,6 +297,26 @@ export function GoalDetailWithPanel() {
                           {session.notes && (
                             <div className="text-sm text-zinc-600 dark:text-zinc-400 font-light leading-relaxed">
                               {session.notes}
+                            </div>
+                          )}
+                          {googleConnected && (
+                            <div className="flex justify-end">
+                              {session.gcal_event_id ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#ccff00]">
+                                  <CheckCheck className="w-3 h-3" /> On calendar
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => exportToCalendar(session.id)}
+                                  disabled={exportingSessionId === session.id}
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-[#ccff00] transition-colors disabled:opacity-50"
+                                >
+                                  <Calendar className="w-3 h-3" />
+                                  {exportingSessionId === session.id
+                                    ? "Exporting…"
+                                    : "Add to Calendar"}
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>

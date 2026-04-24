@@ -151,6 +151,26 @@ export const api = {
       }>("/api/analytics/summary");
    },
 
+   googleStatus() {
+      return request<{ configured: boolean; connected: boolean }>(
+         "/api/integrations/google/status",
+      );
+   },
+   googleAuthUrl() {
+      return request<{ url: string }>("/api/integrations/google/auth-url", {
+         method: "POST",
+      });
+   },
+   googleDisconnect() {
+      return request<void>("/api/integrations/google", { method: "DELETE" });
+   },
+   googleExportSession(sessionId: number | string) {
+      return request<{ event_id: string; html_link: string }>(
+         `/api/integrations/google/export-session/${sessionId}`,
+         { method: "POST" },
+      );
+   },
+
    async parseSyllabus(input: { text?: string; file?: File }) {
       const base = API_BASE;
       const headers = new Headers();

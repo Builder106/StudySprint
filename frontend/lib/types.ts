@@ -29,6 +29,7 @@ export interface StudySession {
   logged_at: string;
   quality: SessionQuality | null;
   next_review_at: string | null;
+  gcal_event_id?: string | null;
 }
 
 export interface AuthResponse {

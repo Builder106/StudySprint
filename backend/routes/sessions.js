@@ -29,7 +29,7 @@ router.get("/goals/:goalId/sessions", async (req, res) => {
     return res.status(404).json({ error: "Goal not found" });
   }
   const { rows } = await pool.query(
-    `SELECT id, goal_id, duration_minutes, notes, logged_at, quality, next_review_at
+    `SELECT id, goal_id, duration_minutes, notes, logged_at, quality, next_review_at, gcal_event_id
      FROM study_sessions
      WHERE goal_id = $1
      ORDER BY logged_at DESC`,
@@ -60,7 +60,7 @@ router.post("/goals/:goalId/sessions", async (req, res) => {
   const { rows } = await pool.query(
     `INSERT INTO study_sessions (goal_id, duration_minutes, notes, logged_at, quality, next_review_at)
      VALUES ($1, $2, $3, COALESCE($4, NOW()), $5, $6)
-     RETURNING id, goal_id, duration_minutes, notes, logged_at, quality, next_review_at`,
+     RETURNING id, goal_id, duration_minutes, notes, logged_at, quality, next_review_at, gcal_event_id`,
     [goalId, Math.round(mins), notes ?? null, logged_at ?? null, qualityValue, reviewAt],
   );
   res.status(201).json({ session: rows[0] });
@@ -114,7 +114,7 @@ router.put("/sessions/:id", async (req, res) => {
   const { rows } = await pool.query(
     `UPDATE study_sessions SET ${updates.join(", ")}
      WHERE id = $${idx}
-     RETURNING id, goal_id, duration_minutes, notes, logged_at, quality, next_review_at`,
+     RETURNING id, goal_id, duration_minutes, notes, logged_at, quality, next_review_at, gcal_event_id`,
     values,
   );
   res.json({ session: rows[0] });
