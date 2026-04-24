@@ -3,6 +3,9 @@ import { expect } from "@playwright/test";
 
 const { Given, When, Then } = createBdd();
 
+// Unique titles generated at runtime so repeated runs don't accumulate stale rows.
+const resolvedTitles = new Map<string, string>();
+
 // ── Auth background ──────────────────────────────────────────────────────────
 
 Given(
@@ -88,15 +91,16 @@ Then("I should see at least one goal card", async ({ page }) => {
 Given(
   "I have a goal titled {string} with {int} target hours",
   async ({ page }, title: string, hours: number) => {
-    // Retrieve the JWT that was stored during the Background login step.
+    const uniqueTitle = `${title} ${Date.now()}`;
+    resolvedTitles.set(title, uniqueTitle);
+
     const token = await page.evaluate(() =>
       localStorage.getItem("studysprint.token"),
     );
-    const baseURL = page.url().replace(/\/dashboard.*/, "");
     const apiBase = process.env.API_URL ?? "http://localhost:4000";
 
     await page.request.post(`${apiBase}/api/goals`, {
-      data: { title, target_hours: hours, status: "Active" },
+      data: { title: uniqueTitle, target_hours: hours, status: "Active" },
       headers: { Authorization: `Bearer ${token}` },
     });
   },
@@ -107,8 +111,9 @@ Given(
 When(
   "I right-click on the {string} goal row",
   async ({ page }, title: string) => {
+    const resolved = resolvedTitles.get(title) ?? title;
     // ContextMenuTrigger uses asChild, so the trigger IS the <a> link — no wrapper element.
-    const row = page.locator('a[href*="/goal/"]').filter({ hasText: title });
+    const row = page.locator('a[href*="/goal/"]').filter({ hasText: resolved });
     await row.first().click({ button: "right" });
   },
 );
@@ -123,8 +128,10 @@ When(
 Then(
   "the goal {string} should no longer appear on the dashboard",
   async ({ page }, title: string) => {
-    // Allow the delete mutation and re-render to settle.
-    await page.waitForTimeout(1_000);
-    await expect(page.getByText(title)).not.toBeVisible();
+    const resolved = resolvedTitles.get(title) ?? title;
+    // toHaveCount(0) avoids strict-mode violations from multiple matches.
+    await expect(
+      page.locator('a[href*="/goal/"]').filter({ hasText: resolved }),
+    ).toHaveCount(0);
   },
 );
