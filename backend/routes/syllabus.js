@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import pdfParse from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
@@ -31,11 +31,16 @@ router.post("/parse", upload.single("pdf"), async (req, res) => {
   let text = typeof req.body?.text === "string" ? req.body.text : "";
 
   if (!text && req.file) {
+    let parser;
     try {
-      const parsed = await pdfParse(req.file.buffer);
+      parser = new PDFParse({ data: req.file.buffer });
+      const parsed = await parser.getText();
       text = parsed.text;
     } catch (err) {
+      console.error("pdf-parse failed:", err);
       return res.status(400).json({ error: "Could not read PDF content" });
+    } finally {
+      if (parser) await parser.destroy().catch(() => {});
     }
   }
 
