@@ -28,6 +28,8 @@ export function GoalDetailWithPanel() {
   const [elapsed, setElapsed] = useState(0);
 
   const [editing, setEditing] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editHoursError, setEditHoursError] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -121,9 +123,11 @@ export function GoalDetailWithPanel() {
   const saveEdits = async (e: FormEvent) => {
     e.preventDefault();
     if (!goal) return;
+    setEditError(null);
+    setEditHoursError(null);
     const target = Number(form.target_hours);
     if (!Number.isFinite(target) || target <= 0) {
-      alert("Target hours must be greater than 0");
+      setEditHoursError("Must be greater than 0.");
       return;
     }
     try {
@@ -140,7 +144,7 @@ export function GoalDetailWithPanel() {
       setGoal(res.goal);
       setEditing(false);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Failed to save goal");
+      setEditError(err instanceof ApiError ? err.message : "Failed to save goal");
     }
   };
 
@@ -352,10 +356,21 @@ export function GoalDetailWithPanel() {
                         min={0.1}
                         step={0.1}
                         value={form.target_hours}
-                        onChange={(e) => setForm({ ...form, target_hours: e.target.value })}
+                        aria-invalid={!!editHoursError}
+                        onChange={(e) => {
+                          setForm({ ...form, target_hours: e.target.value });
+                          if (editHoursError) setEditHoursError(null);
+                        }}
                         required
-                        className="w-full bg-transparent border-b border-zinc-300 dark:border-white/20 py-2 focus:outline-none focus:border-[#ccff00]"
+                        className={`w-full bg-transparent border-b py-2 focus:outline-none ${
+                          editHoursError
+                            ? "border-red-400 focus:border-red-400"
+                            : "border-zinc-300 dark:border-white/20 focus:border-[#ccff00]"
+                        }`}
                       />
+                      {editHoursError && (
+                        <p className="text-[10px] text-red-400 font-medium" role="alert">{editHoursError}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Target date</label>
@@ -376,6 +391,9 @@ export function GoalDetailWithPanel() {
                       className="w-full bg-transparent border-b border-zinc-300 dark:border-white/20 py-2 focus:outline-none focus:border-[#ccff00]"
                     />
                   </div>
+                  {editError && (
+                    <p className="text-xs text-red-400 font-medium" role="alert">{editError}</p>
+                  )}
                   <div className="flex gap-3">
                     <button
                       type="submit"
@@ -385,7 +403,11 @@ export function GoalDetailWithPanel() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setEditing(false)}
+                      onClick={() => {
+                        setEditing(false);
+                        setEditError(null);
+                        setEditHoursError(null);
+                      }}
                       className="flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-widest border border-zinc-300 dark:border-white/20 hover:border-zinc-500 dark:hover:border-white/50 transition-colors"
                     >
                       Cancel

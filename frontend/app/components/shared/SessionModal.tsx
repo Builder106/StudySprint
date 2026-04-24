@@ -23,6 +23,7 @@ export function SessionModal({ goalId, initialMinutes, session, onClose, onSaved
   const [notes, setNotes] = useState<string>(session?.notes ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [durationError, setDurationError] = useState<string | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -35,9 +36,10 @@ export function SessionModal({ goalId, initialMinutes, session, onClose, onSaved
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    setDurationError(null);
     const h = Number(hours);
     if (!Number.isFinite(h) || h <= 0) {
-      setError("Duration must be greater than 0");
+      setDurationError("Duration must be greater than 0 hours.");
       return;
     }
     const minutes = Math.max(1, Math.round(h * 60));
@@ -87,11 +89,29 @@ export function SessionModal({ goalId, initialMinutes, session, onClose, onSaved
                 min={0.1}
                 step={0.1}
                 value={hours}
-                onChange={(e) => setHours(e.target.value)}
-                className="w-full bg-transparent border-b border-zinc-300 dark:border-white/20 pl-8 pr-0 py-3 text-zinc-900 dark:text-zinc-50 text-xl font-medium focus:outline-none focus:border-[#ccff00] transition-colors rounded-none"
+                aria-invalid={!!durationError}
+                aria-describedby="session-duration-help"
+                onChange={(e) => {
+                  setHours(e.target.value);
+                  if (durationError) setDurationError(null);
+                }}
+                className={`w-full bg-transparent border-b pl-8 pr-0 py-3 text-zinc-900 dark:text-zinc-50 text-xl font-medium focus:outline-none transition-colors rounded-none ${
+                  durationError
+                    ? "border-red-400 focus:border-red-400"
+                    : "border-zinc-300 dark:border-white/20 focus:border-[#ccff00]"
+                }`}
               />
               <Clock className="w-5 h-5 text-zinc-500 absolute left-0 top-3.5" />
             </div>
+            <p
+              id="session-duration-help"
+              className={`text-[10px] font-medium tracking-wide ${
+                durationError ? "text-red-400" : "text-zinc-400 dark:text-zinc-600"
+              }`}
+              role={durationError ? "alert" : undefined}
+            >
+              {durationError ?? "Must be greater than 0 hours."}
+            </p>
           </div>
 
           <div className="space-y-4">

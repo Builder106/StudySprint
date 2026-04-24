@@ -13,16 +13,19 @@ export function NewGoal() {
   const [targetDate, setTargetDate] = useState("");
   const [subjects, setSubjects] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [hoursError, setHoursError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const hours = Number(targetHours);
     if (!Number.isFinite(hours) || hours <= 0) {
-      setError("Target hours must be greater than 0");
+      setHoursError("Must be greater than 0.");
+      setError(null);
       return;
     }
     setError(null);
+    setHoursError(null);
     setSubmitting(true);
     try {
       const res = await api.createGoal({
@@ -96,10 +99,28 @@ export function NewGoal() {
                 min={0.5}
                 step={0.5}
                 required
+                aria-invalid={!!hoursError}
+                aria-describedby="target-hours-help"
                 value={targetHours}
-                onChange={(e) => setTargetHours(e.target.value)}
-                className="w-full bg-transparent border-b border-zinc-300 dark:border-white/20 py-3 text-lg focus:outline-none focus:border-[#ccff00]"
+                onChange={(e) => {
+                  setTargetHours(e.target.value);
+                  if (hoursError) setHoursError(null);
+                }}
+                className={`w-full bg-transparent border-b py-3 text-lg focus:outline-none ${
+                  hoursError
+                    ? "border-red-400 focus:border-red-400"
+                    : "border-zinc-300 dark:border-white/20 focus:border-[#ccff00]"
+                }`}
               />
+              <p
+                id="target-hours-help"
+                className={`text-[10px] font-medium tracking-wide ${
+                  hoursError ? "text-red-400" : "text-zinc-400 dark:text-zinc-600"
+                }`}
+                role={hoursError ? "alert" : undefined}
+              >
+                {hoursError ?? "Must be greater than 0."}
+              </p>
             </div>
             <div className="space-y-3">
               <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
