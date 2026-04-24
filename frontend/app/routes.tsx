@@ -4,6 +4,7 @@ import { Register } from "./components/Register";
 import { Dashboard } from "./components/Dashboard";
 import { GoalDetailWithPanel } from "./components/GoalDetailWithPanel";
 import { NewGoal } from "./components/NewGoal";
+import { Analytics } from "./components/Analytics";
 import { ProtectedRoute } from "./components/shared/ProtectedRoute";
 
 function RedirectToGoal() {
@@ -39,4 +40,12 @@ export const router = createBrowserRouter([
     ),
   },
   { path: "/goal/:id/details", element: <RedirectToGoal /> },
+  {
+    path: "/analytics",
+    element: (
+      <ProtectedRoute>
+        <Analytics />
+      </ProtectedRoute>
+    ),
+  },
 ]);

@@ -135,4 +135,19 @@ export const api = {
    deleteSession(sessionId: number | string) {
       return request<void>(`/api/sessions/${sessionId}`, { method: "DELETE" });
    },
+
+   analyticsSummary() {
+      return request<{
+         daily: { date: string; minutes: number }[];
+         hourly: { hour: number; minutes: number }[];
+         weekday: { dow: number; minutes: number }[];
+         by_subject: { subject: string; minutes: number }[];
+         totals: {
+            minutes: number;
+            sessions_last_365: number;
+            current_streak_days: number;
+            longest_streak_days: number;
+         };
+      }>("/api/analytics/summary");
+   },
 };

@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, ChevronRight, Activity } from "lucide-react";
+import { Plus, ChevronRight, Activity, BarChart3 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { minutesToHours, progressPercent } from "@/lib/format";
 import type { Goal, GoalStatus } from "@/lib/types";
@@ -79,13 +79,23 @@ export function Dashboard() {
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-zinc-900 dark:text-zinc-50 font-sans selection:bg-[#ccff00] selection:text-black">
       <TopNav
         right={
-          <Link
-            to="/goals/new"
-            aria-label="New goal"
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-[#ccff00] text-black hover:bg-[#b3e600] transition-colors focus:outline-none"
-          >
-            <Plus className="w-5 h-5" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/analytics"
+              aria-label="Analytics"
+              className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-[#ccff00] transition-colors"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Analytics</span>
+            </Link>
+            <Link
+              to="/goals/new"
+              aria-label="New goal"
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-[#ccff00] text-black hover:bg-[#b3e600] transition-colors focus:outline-none"
+            >
+              <Plus className="w-5 h-5" />
+            </Link>
+          </div>
         }
       />
 
