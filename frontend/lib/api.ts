@@ -176,7 +176,11 @@ export const api = {
             description: string;
             unlocked: boolean;
          }[];
-      }>("/api/gamification/profile");
+      }>(
+         `/api/gamification/profile?tz=${encodeURIComponent(
+            Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+         )}`,
+      );
    },
 
    googleStatus() {
@@ -196,6 +200,32 @@ export const api = {
       return request<{ event_id: string; html_link: string }>(
          `/api/integrations/google/export-session/${sessionId}`,
          { method: "POST" },
+      );
+   },
+   googleUpcomingEvents(opts?: { from?: string; to?: string }) {
+      const qs = new URLSearchParams();
+      if (opts?.from) qs.set("from", opts.from);
+      if (opts?.to) qs.set("to", opts.to);
+      const suffix = qs.toString() ? `?${qs.toString()}` : "";
+      return request<{
+         events: {
+            id: string;
+            summary: string;
+            start: string | null;
+            end: string | null;
+            all_day: boolean;
+            html_link: string;
+            imported: { session_id: number; goal_id: number; goal_title: string } | null;
+         }[];
+      }>(`/api/integrations/google/upcoming-events${suffix}`);
+   },
+   googleImportEvent(eventId: string, goalId: number) {
+      return request<{ session: import("./types").StudySession }>(
+         "/api/integrations/google/import-event",
+         {
+            method: "POST",
+            body: JSON.stringify({ event_id: eventId, goal_id: goalId }),
+         },
       );
    },
 
