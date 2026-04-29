@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { pool } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
+import { tryExportSession } from "./integrations.js";
 
 const router = Router({ mergeParams: true });
-router.use(requireAuth);
 
 async function assertGoalOwnership(goalId, userId) {
   const { rows } = await pool.query(
@@ -23,7 +23,7 @@ function nextReviewFromQuality(quality, baseDate = new Date()) {
   return d.toISOString();
 }
 
-router.get("/goals/:goalId/sessions", async (req, res) => {
+router.get("/goals/:goalId/sessions", requireAuth, async (req, res) => {
   const goalId = Number(req.params.goalId);
   if (!(await assertGoalOwnership(goalId, req.userId))) {
     return res.status(404).json({ error: "Goal not found" });
@@ -38,7 +38,7 @@ router.get("/goals/:goalId/sessions", async (req, res) => {
   res.json({ sessions: rows });
 });
 
-router.post("/goals/:goalId/sessions", async (req, res) => {
+router.post("/goals/:goalId/sessions", requireAuth, async (req, res) => {
   const goalId = Number(req.params.goalId);
   if (!(await assertGoalOwnership(goalId, req.userId))) {
     return res.status(404).json({ error: "Goal not found" });
@@ -66,8 +66,8 @@ router.post("/goals/:goalId/sessions", async (req, res) => {
   res.status(201).json({ session: rows[0] });
 });
 
-router.put("/sessions/:id", updateSessionHandler);
-router.patch("/sessions/:id", updateSessionHandler);
+router.put("/sessions/:id", requireAuth, updateSessionHandler);
+router.patch("/sessions/:id", requireAuth, updateSessionHandler);
 
 async function updateSessionHandler(req, res) {
   const sessionId = Number(req.params.id);
@@ -120,10 +120,14 @@ async function updateSessionHandler(req, res) {
      RETURNING id, goal_id, duration_minutes, notes, logged_at, quality, next_review_at, gcal_event_id`,
     values,
   );
-  res.json({ session: rows[0] });
+  const session = rows[0];
+  if (session.gcal_event_id) {
+    await tryExportSession(req.userId, session.id);
+  }
+  res.json({ session });
 }
 
-router.delete("/sessions/:id", async (req, res) => {
+router.delete("/sessions/:id", requireAuth, async (req, res) => {
   const sessionId = Number(req.params.id);
   const { rowCount } = await pool.query(
     `DELETE FROM study_sessions s

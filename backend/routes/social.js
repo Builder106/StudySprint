@@ -73,11 +73,8 @@ router.get("/profiles/:username", async (req, res) => {
   });
 });
 
-// Everything else requires auth
-router.use(requireAuth);
-
 // Me — update own profile
-router.put("/profiles/me", async (req, res) => {
+router.put("/profiles/me", requireAuth, async (req, res) => {
   const { username, display_name, bio, is_public } = req.body ?? {};
 
   if (username !== undefined) {
@@ -127,7 +124,7 @@ router.put("/profiles/me", async (req, res) => {
 });
 
 // Leaderboard — top public users by minutes logged in the last 7 days
-router.get("/leaderboard", async (req, res) => {
+router.get("/leaderboard", requireAuth, async (req, res) => {
   const { rows } = await pool.query(
     `SELECT u.username, u.display_name,
             COALESCE(SUM(s.duration_minutes), 0)::int AS weekly_minutes
@@ -145,7 +142,7 @@ router.get("/leaderboard", async (req, res) => {
 });
 
 // Rooms
-router.get("/rooms", async (req, res) => {
+router.get("/rooms", requireAuth, async (req, res) => {
   const { rows: mine } = await pool.query(
     `SELECT r.slug, r.name, r.description, r.created_at,
             (r.passcode_hash IS NOT NULL) AS has_passcode,
@@ -158,7 +155,7 @@ router.get("/rooms", async (req, res) => {
   res.json({ rooms: mine });
 });
 
-router.post("/rooms", async (req, res) => {
+router.post("/rooms", requireAuth, async (req, res) => {
   const { name, description, passcode } = req.body ?? {};
   if (typeof name !== "string" || name.trim().length < 3) {
     return res.status(400).json({ error: "Name must be at least 3 characters" });
@@ -215,7 +212,7 @@ router.post("/rooms", async (req, res) => {
   }
 });
 
-router.get("/rooms/:slug", async (req, res) => {
+router.get("/rooms/:slug", requireAuth, async (req, res) => {
   const { slug } = req.params;
   const { rows: roomRows } = await pool.query(
     `SELECT r.id, r.slug, r.name, r.description, r.created_at,
@@ -274,7 +271,7 @@ router.get("/rooms/:slug", async (req, res) => {
   });
 });
 
-router.post("/rooms/:slug/join", async (req, res) => {
+router.post("/rooms/:slug/join", requireAuth, async (req, res) => {
   const { slug } = req.params;
   const { passcode } = req.body ?? {};
   const { rows } = await pool.query(
@@ -296,7 +293,7 @@ router.post("/rooms/:slug/join", async (req, res) => {
   res.json({ ok: true });
 });
 
-router.post("/rooms/:slug/leave", async (req, res) => {
+router.post("/rooms/:slug/leave", requireAuth, async (req, res) => {
   const { slug } = req.params;
   const { rows } = await pool.query(
     `SELECT id, created_by FROM study_rooms WHERE slug = $1`,

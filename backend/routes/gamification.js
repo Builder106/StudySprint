@@ -46,8 +46,39 @@ const ACHIEVEMENTS = [
   { id: "sprint_day", label: "Sprint Day", description: "Log 10 sessions in a single day." },
 ];
 
+// Resolve the hour-of-day for a UTC instant in a given IANA timezone.
+// Falls back to UTC if the tz string is invalid.
+function localHour(loggedAt, tz) {
+  try {
+    const fmt = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hour: "numeric",
+      hour12: false,
+    });
+    return Number(fmt.format(new Date(loggedAt)));
+  } catch {
+    return new Date(loggedAt).getUTCHours();
+  }
+}
+
+// Resolve the calendar date (YYYY-MM-DD) for a UTC instant in a given IANA timezone.
+function localDateKey(loggedAt, tz) {
+  try {
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    return fmt.format(new Date(loggedAt)); // en-CA yields YYYY-MM-DD
+  } catch {
+    return new Date(loggedAt).toISOString().slice(0, 10);
+  }
+}
+
 router.get("/profile", async (req, res) => {
   const userId = req.userId;
+  const tz = typeof req.query.tz === "string" && req.query.tz ? req.query.tz : "UTC";
 
   const { rows: sessionsRows } = await pool.query(
     `SELECT s.id, s.duration_minutes, s.quality, s.logged_at
@@ -66,15 +97,57 @@ router.get("/profile", async (req, res) => {
     [userId],
   );
 
-  // Core XP: minutes + quality bonus (quality * 10)
+  // Streaks — compute first so XP can use a streak multiplier.
+  // Bucket sessions into local-tz dates so the streak boundary matches
+  // the user's calendar day, not UTC midnight.
+  const dayMinutes = new Map();
+  for (const s of sessionsRows) {
+    const key = localDateKey(s.logged_at, tz);
+    dayMinutes.set(key, (dayMinutes.get(key) ?? 0) + s.duration_minutes);
+  }
+
+  const todayKey = localDateKey(new Date(), tz);
+  const daily = [];
+  // Build a 365-day window ending today in the user's local tz.
+  const today = new Date(`${todayKey}T00:00:00Z`);
+  for (let i = 364; i >= 0; i--) {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    daily.push({ date: key, minutes: dayMinutes.get(key) ?? 0 });
+  }
+
+  // streakEndingOn[i] = consecutive non-zero days up to and including day i.
+  const streakEndingOn = new Array(daily.length).fill(0);
+  for (let i = 0; i < daily.length; i++) {
+    if (daily[i].minutes > 0) {
+      streakEndingOn[i] = (i > 0 ? streakEndingOn[i - 1] : 0) + 1;
+    }
+  }
+
+  const currentStreak = streakEndingOn[streakEndingOn.length - 1];
+  let longestStreak = 0;
+  for (const v of streakEndingOn) if (v > longestStreak) longestStreak = v;
+
+  const streakByDate = new Map();
+  for (let i = 0; i < daily.length; i++) {
+    streakByDate.set(daily[i].date, streakEndingOn[i]);
+  }
+
+  // Core XP: (minutes + quality bonus) × streak multiplier of the day the
+  // session was logged. Multiplier ramps from 1.0× → 2.0× across a 30-day
+  // streak. Using the streak-as-of-that-day means breaking a streak does NOT
+  // retroactively shrink old XP — past achievements stay earned.
   let totalMinutes = 0;
   let masteredCount = 0;
   const xpBySession = sessionsRows.map((s) => {
-    const base = s.duration_minutes;
-    const qualityBonus = (s.quality ?? 0) * 10;
+    const base = s.duration_minutes + (s.quality ?? 0) * 10;
+    const dateKey = localDateKey(s.logged_at, tz);
+    const streakOnDay = streakByDate.get(dateKey) ?? 0;
+    const multiplier = 1 + Math.min(streakOnDay / 30, 1);
     totalMinutes += s.duration_minutes;
     if (s.quality === 5) masteredCount++;
-    return base + qualityBonus;
+    return Math.round(base * multiplier);
   });
   const totalXp = xpBySession.reduce((a, b) => a + b, 0);
   const level = levelFromXp(totalXp);
@@ -85,50 +158,17 @@ router.get("/profile", async (req, res) => {
   const progressToNext =
     xpForNextLevel > 0 ? Math.min(1, xpIntoLevel / xpForNextLevel) : 0;
 
-  // Streaks (reuse analytics logic but scoped here)
-  const { rows: daily } = await pool.query(
-    `SELECT to_char(d.day, 'YYYY-MM-DD') AS date,
-            COALESCE(SUM(s.duration_minutes), 0)::int AS minutes
-     FROM generate_series(
-       (CURRENT_DATE - INTERVAL '364 days')::date,
-       CURRENT_DATE::date,
-       '1 day'
-     ) AS d(day)
-     LEFT JOIN study_sessions s
-       ON s.goal_id IN (SELECT id FROM study_goals WHERE user_id = $1)
-      AND (s.logged_at AT TIME ZONE 'UTC')::date = d.day
-     GROUP BY d.day
-     ORDER BY d.day`,
-    [userId],
-  );
-  let currentStreak = 0;
-  for (let i = daily.length - 1; i >= 0; i--) {
-    if (daily[i].minutes > 0) currentStreak++;
-    else break;
-  }
-  let longestStreak = 0;
-  let run = 0;
-  for (const row of daily) {
-    if (row.minutes > 0) {
-      run++;
-      if (run > longestStreak) longestStreak = run;
-    } else {
-      run = 0;
-    }
-  }
-
   // Achievement unlocks
   const totalHours = totalMinutes / 60;
   const subjectCount = subjectsRows.length;
-  const hasDawn = sessionsRows.some(
-    (s) => new Date(s.logged_at).getUTCHours() < 7,
-  );
-  const hasNight = sessionsRows.some(
-    (s) => new Date(s.logged_at).getUTCHours() >= 0 && new Date(s.logged_at).getUTCHours() < 3,
-  );
+  const hasDawn = sessionsRows.some((s) => localHour(s.logged_at, tz) < 7);
+  const hasNight = sessionsRows.some((s) => {
+    const h = localHour(s.logged_at, tz);
+    return h >= 0 && h < 3;
+  });
   const dayCounts = new Map();
   for (const s of sessionsRows) {
-    const key = new Date(s.logged_at).toISOString().slice(0, 10);
+    const key = localDateKey(s.logged_at, tz);
     dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1);
   }
   const maxDay = Math.max(0, ...dayCounts.values());
