@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
+import { getAvatarUrl } from "@/lib/avatar";
 import { formatDuration } from "@/lib/format";
 import { TopNav } from "./shared/TopNav";
 
@@ -117,9 +118,14 @@ export function Community() {
                 <div
                   key={e.username}
                   title={e.display_name || e.username}
-                  className="w-12 h-12 rounded-full bg-black text-[#ccff00] flex items-center justify-center text-xs font-bold tracking-tighter ring-2 ring-[#ccff00]"
+                  className="w-12 h-12 rounded-full bg-white dark:bg-zinc-900 ring-2 ring-[#ccff00] overflow-hidden"
                 >
-                  {initials(e.display_name || e.username)}
+                  <img
+                    src={getAvatarUrl(e.username)}
+                    alt={e.display_name || e.username}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
                 </div>
               ))}
             </div>
@@ -252,8 +258,13 @@ export function Community() {
                     <div className="text-4xl md:text-6xl font-medium tracking-tighter tabular-nums">
                       #1
                     </div>
-                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-black text-[#ccff00] flex items-center justify-center text-base font-bold tracking-tighter shrink-0">
-                      {initials(champion.display_name || champion.username)}
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white overflow-hidden shrink-0 ring-2 ring-black">
+                      <img
+                        src={getAvatarUrl(champion.username)}
+                        alt={champion.display_name || champion.username}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-xl md:text-2xl font-medium tracking-tighter truncate">
@@ -280,8 +291,13 @@ export function Community() {
                         <span className="text-sm font-bold tabular-nums text-zinc-500 w-8">
                           #{i + 2}
                         </span>
-                        <div className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-white/10 text-zinc-600 dark:text-zinc-300 flex items-center justify-center text-[11px] font-bold tracking-tighter shrink-0">
-                          {initials(entry.display_name || entry.username)}
+                        <div className="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 overflow-hidden shrink-0 ring-1 ring-zinc-200 dark:ring-white/10">
+                          <img
+                            src={getAvatarUrl(entry.username)}
+                            alt={entry.display_name || entry.username}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
                         </div>
                         <Link
                           to={`/u/${entry.username}`}
