@@ -9,8 +9,10 @@
     "dev:backend": "cd backend && npm run dev",
     "build": "vite build",
     "setup": "npm install && cd backend && npm install",
+    "test": "bddgen && playwright test",
     "test:e2e": "bddgen && playwright test",
-    "test:e2e:ui": "bddgen && playwright test --ui"
+    "test:e2e:ui": "bddgen && playwright test --ui",
+    "demo": "DEMO=1 bddgen --config playwright.demo.config.ts && DEMO=1 playwright test --config playwright.demo.config.ts"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
