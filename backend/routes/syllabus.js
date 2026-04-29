@@ -118,14 +118,13 @@ router.post("/parse", upload.single("pdf"), async (req, res) => {
           type: "json_schema",
           json_schema: {
             name: "study_goals",
-            strict: true,
+            // strict + require_parameters filters the free pool to zero
+            // endpoints (404). Send the schema as a hint instead and rely
+            // on extractJsonObject + the prompt for shape adherence.
+            strict: false,
             schema: GOALS_SCHEMA,
           },
         },
-        // Only route to providers that genuinely honor structured outputs,
-        // so we don't get plain-text or fenced JSON back from a free-tier
-        // provider that ignored response_format.
-        provider: { require_parameters: true },
         temperature: 0.3,
         max_tokens: 2000,
       }),
