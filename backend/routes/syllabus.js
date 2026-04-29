@@ -13,12 +13,12 @@ const upload = multer({
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 // Fallback chain: OpenRouter tries each in order until one succeeds.
+// Capped at 3 — OpenRouter rejects longer arrays with a 400.
 // All must support structured outputs (json_schema + strict).
 const DEFAULT_MODELS = [
   "qwen/qwen3-next-80b-a3b-instruct:free",
   "meta-llama/llama-3.3-70b-instruct:free",
   "google/gemini-2.0-flash-exp:free",
-  "mistralai/mistral-small-3.1-24b-instruct:free",
 ];
 const MAX_INPUT_CHARS = 20000;
 
@@ -91,9 +91,11 @@ router.post("/parse", upload.single("pdf"), async (req, res) => {
 
   // OPENROUTER_MODEL accepts a single id or a comma-separated fallback chain.
   const modelEnv = process.env.OPENROUTER_MODEL?.trim();
-  const modelList = modelEnv
-    ? modelEnv.split(",").map((s) => s.trim()).filter(Boolean)
-    : DEFAULT_MODELS;
+  const modelList = (
+    modelEnv
+      ? modelEnv.split(",").map((s) => s.trim()).filter(Boolean)
+      : DEFAULT_MODELS
+  ).slice(0, 3);
   const modelField =
     modelList.length > 1 ? { models: modelList } : { model: modelList[0] };
   const trimmed = text.slice(0, MAX_INPUT_CHARS);
