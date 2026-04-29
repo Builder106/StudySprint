@@ -76,6 +76,7 @@ router.post("/parse", upload.single("pdf"), async (req, res) => {
         ],
         response_format: { type: "json_object" },
         temperature: 0.3,
+        max_tokens: 2000,
       }),
     });
   } catch (err) {
@@ -93,9 +94,23 @@ router.post("/parse", upload.single("pdf"), async (req, res) => {
   }
 
   const data = await llmResponse.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (typeof content !== "string") {
-    return res.status(502).json({ error: "Empty LLM response" });
+  const choice = data?.choices?.[0];
+  const message = choice?.message;
+  let content = typeof message?.content === "string" ? message.content : "";
+  // Some thinking-class free models route their answer through reasoning fields
+  // and leave content empty; fall back so we don't 502 on a usable response.
+  if (!content.trim()) {
+    const alt = message?.reasoning_content ?? message?.reasoning;
+    if (typeof alt === "string" && alt.trim()) content = alt;
+  }
+  if (!content.trim()) {
+    const usedModel = data?.model ?? model;
+    const provider = data?.provider ?? "unknown";
+    const finish = choice?.finish_reason ?? "unknown";
+    console.error("openrouter empty content:", { usedModel, provider, finish, raw: JSON.stringify(data).slice(0, 1000) });
+    return res.status(502).json({
+      error: `Empty response from ${usedModel} (${provider}, finish=${finish}). Try again or set OPENROUTER_MODEL to a specific free model.`,
+    });
   }
 
   let parsed;
