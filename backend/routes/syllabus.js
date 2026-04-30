@@ -21,7 +21,13 @@ const DEFAULT_MODELS = ["openrouter/free"];
 const MAX_INPUT_CHARS = 20000;
 
 const SYSTEM_PROMPT = `You extract structured study goals from course syllabi.
-Rules:
+
+Output format (CRITICAL): Respond with ONE JSON object and nothing else.
+- No preamble, no explanation, no markdown fences, no commentary.
+- Start your reply with the character "{" and end with "}".
+- Shape: {"goals": [{"title": string, "description": string, "target_hours": number, "target_date": string|null, "subjects": string[]}]}
+
+Field rules:
 - title: 3-80 chars, concrete ("Master integration techniques", not "Study calculus")
 - description: 1-2 sentences explaining scope
 - target_hours: realistic (5-50 per goal)
@@ -126,7 +132,7 @@ router.post("/parse", upload.single("pdf"), async (req, res) => {
           },
         },
         temperature: 0.3,
-        max_tokens: 2000,
+        max_tokens: 4000,
       }),
     });
   } catch (err) {
@@ -172,8 +178,8 @@ router.post("/parse", upload.single("pdf"), async (req, res) => {
 
   const parsed = extractJsonObject(content);
   if (!parsed) {
-    console.error("openrouter non-JSON content:", content.slice(0, 800));
-    const preview = content.slice(0, 200).replace(/\s+/g, " ").trim();
+    console.error("openrouter non-JSON content:", content.slice(0, 1500));
+    const preview = content.slice(0, 500).replace(/\s+/g, " ").trim();
     return res.status(502).json({
       error: `LLM returned non-JSON content. Preview: ${preview}`,
     });
