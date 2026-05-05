@@ -1,103 +1,87 @@
 # StudySprint
 
-Minimalist study goal tracker — create goals, log timed sessions, and visualize progress.
+A study tracker that turns focus sessions into a growing garden. Set goals, run a focus timer, watch plants grow with time logged, and compare streaks on a public leaderboard.
 
-**Live app:** https://studysprint-frontend.onrender.com
+**Live app:** https://studysprint-frontend.onrender.com · **Demo account:** `demo@example.com` / `demo123`
 
----
+<!-- Replace this with a hero screenshot or GIF (recommended: 960px wide). -->
+<!-- ![StudySprint dashboard](docs/hero.png) -->
 
-## Prerequisites
+## Features
 
-- Node.js 18+
-- PostgreSQL (local instance)
+- **Focus timer + session logging** — start, pause, and resume timed study sessions, tagged by goal and subject.
+- **Gamified garden** — every focused minute grows a plant; streaks unlock new species.
+- **AI syllabus parser** — paste a syllabus, get goals and deadlines extracted automatically (OpenRouter-backed).
+- **Co-study rooms** — join real-time rooms to study alongside other users.
+- **Community leaderboard + public profiles** — opt-in social layer with avatars and weekly rankings.
+- **Analytics** — per-subject time distribution, weekly trends, and streak history (Recharts).
+- **Google Calendar integration** — push study blocks to your calendar.
 
----
+## Tech stack
+
+| Layer | Tools |
+|---|---|
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS v4, Radix UI, Framer Motion, Recharts |
+| Backend | Node.js, Express, PostgreSQL (`pg`), JWT auth (`bcryptjs` + `jsonwebtoken`) |
+| AI | OpenRouter (multi-model fallback chain for syllabus parsing) |
+| Integrations | Google Calendar API (`googleapis`) |
+| Testing | Playwright + playwright-bdd (Gherkin scenarios, demo-mode video capture) |
+| Deploy | Render (web service + static site + managed Postgres) |
+
+## Architecture
+
+```
+frontend/  React + Vite SPA
+  app/components/   page-level components (Dashboard, Garden, StudyRoom, ...)
+  lib/              API client, hooks, utilities
+backend/   Express API
+  routes/           auth, goals, sessions, subjects, syllabus, social, analytics, gamification, integrations, admin
+  middleware/       JWT auth
+  scripts/          migrate.js, seed.js
+  sql/              schema.sql
+e2e/       Playwright + Gherkin BDD suite (QA + demo-recording configs)
+```
 
 ## Local setup
 
-### 1. Clone and install dependencies
+Requires Node.js 18+ and a local PostgreSQL instance.
 
 ```bash
-cd StudySprint
-npm run setup        # installs frontend + backend deps
-```
-
-### 2. Create the backend environment file
-
-```bash
+npm run setup                       # installs frontend + backend deps
 cp backend/.env.example backend/.env
-```
-
-Edit `backend/.env` and fill in your local values:
-
-```
-DATABASE_URL=postgresql://postgres:password@localhost:5432/study_sprint
-JWT_SECRET=any-random-string
-PORT=4000
-CLIENT_ORIGIN=http://localhost:5173
-```
-
-### 3. Create the database
-
-```bash
 createdb study_sprint
+cd backend && npm run migrate && npm run seed && cd ..
+npm run dev                         # frontend on :5173, backend on :4000
 ```
 
-### 4. Run migrations and seed
+The seed script creates `demo@example.com` / `demo123` with starter goals and sessions.
 
-```bash
-cd backend
-npm run migrate      # creates tables
-npm run seed         # creates demo@example.com / demo123 with starter data
-cd ..
-```
+### Environment variables
 
-### 5. Start the dev server
-
-```bash
-npm run dev          # starts frontend (port 5173) and backend (port 4000) together
-```
-
----
-
-## Demo account
-
-| Email | Password |
-|---|---|
-| demo@example.com | demo123 |
-
----
-
-## Project structure
-
-```
-StudySprint/
-├── frontend/          # React 18 + TypeScript + Vite + TailwindCSS v4
-├── backend/           # Express.js + PostgreSQL API
-│   ├── routes/        # auth, goals, sessions, subjects
-│   ├── middleware/    # JWT auth
-│   ├── scripts/       # migrate.js, seed.js
-│   └── sql/           # schema.sql
-├── index.html
-├── vite.config.ts
-└── package.json
-```
-
----
-
-## Environment variables
-
-### Backend (`backend/.env`)
+**Backend** (`backend/.env`)
 
 | Key | Description |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET` | Secret for signing JWTs |
-| `PORT` | Port for the API server (default: 4000) |
-| `CLIENT_ORIGIN` | Frontend URL for CORS (e.g. `http://localhost:5173`) |
+| `PORT` | API port (default `4000`) |
+| `CLIENT_ORIGIN` | Frontend origin for CORS |
+| `OPENROUTER_API_KEY` | API key for the syllabus parser |
 
-### Frontend (`.env` in `StudySprint/`)
+**Frontend** (`.env` in repo root)
 
 | Key | Description |
 |---|---|
-| `VITE_API_URL` | Backend URL (defaults to `http://localhost:4000` if not set) |
+| `VITE_API_URL` | Backend URL (defaults to `http://localhost:4000`) |
+
+## Tests
+
+```bash
+npm test            # Gherkin E2E suite, headless
+npm run test:e2e:ui # Playwright UI mode
+npm run demo        # records narrated walkthrough videos (DEMO=1)
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
