@@ -1,0 +1,25 @@
+node_modules
+dist
+.features-gen
+.features-gen-demo
+playwright-report
+test-results
+
+.env
+.env.local
+.env.*.local
+
+.DS_Store
+*.log
+
+# Playwright/demo artifacts
+*.mov
+*.mp4
+*.webm
+
+# Secrets
+client_secret*.json
+*credentials*.json
+
+# Supabase CLI local state (when supabase init is used)
+.supabase

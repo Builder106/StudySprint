@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { api, getToken, setToken } from "./api";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { supabase } from "./supabase";
 import type { User } from "./types";
 
 interface AuthContextValue {
@@ -8,43 +9,49 @@ interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+function toUser(supaUser: SupabaseUser | null | undefined): User | null {
+  if (!supaUser) return null;
+  return {
+    id: supaUser.id,
+    email: supaUser.email ?? "",
+    created_at: supaUser.created_at,
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(toUser(session?.user));
       setLoading(false);
-      return;
-    }
-    api
-      .me()
-      .then((res) => setUser(res.user))
-      .catch(() => setToken(null))
-      .finally(() => setLoading(false));
+    });
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(toUser(session?.user));
+    });
+    return () => {
+      data.subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
-    const res = await api.login(email, password);
-    setToken(res.token);
-    setUser(res.user);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
   };
 
   const register = async (email: string, password: string) => {
-    const res = await api.register(email, password);
-    setToken(res.token);
-    setUser(res.user);
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) throw new Error(error.message);
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
+  const logout = async () => {
+    await supabase.auth.signOut();
   };
 
   return (

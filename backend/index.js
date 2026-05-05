@@ -2,7 +2,6 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 
-import authRoutes from "./routes/auth.js";
 import goalsRoutes from "./routes/goals.js";
 import sessionsRoutes from "./routes/sessions.js";
 import subjectsRoutes from "./routes/subjects.js";
@@ -30,7 +29,6 @@ app.get("/api/health", (_req, res) => {
    res.json({ ok: true, uptime: process.uptime() });
 });
 
-app.use("/api/auth", authRoutes);
 app.use("/api/goals", goalsRoutes);
 app.use("/api", sessionsRoutes);
 app.use("/api/subjects", subjectsRoutes);

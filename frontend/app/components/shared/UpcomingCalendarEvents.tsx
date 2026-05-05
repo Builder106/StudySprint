@@ -59,16 +59,9 @@ export function UpcomingCalendarEvents({ refreshKey, onImported }: Props) {
   const [importing, setImporting] = useState<Event | null>(null);
 
   useEffect(() => {
-    const now = Date.now();
-    const from = new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString();
-    const to = new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString();
-    api
-      .googleUpcomingEvents({ from, to })
-      .then(({ events }) => {
-        setEvents(events);
-        setError(null);
-      })
-      .catch((err) => setError(err?.message || "Couldn't load events"));
+    // Google Calendar integration is gated off during the Supabase migration.
+    // Re-enabled in Phase 3 as a Supabase Edge Function.
+    setEvents([]);
   }, [refreshKey]);
 
   useEffect(() => {

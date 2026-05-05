@@ -1,18 +1,13 @@
-import type { AuthResponse, Goal, StudySession, User } from "./types";
+import { supabase } from "./supabase";
+import type { Goal, StudySession } from "./types";
 
 const API_BASE =
    (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
    "http://localhost:4000";
 
-const TOKEN_KEY = "studysprint.token";
-
-export function getToken(): string | null {
-   return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setToken(token: string | null) {
-   if (token) localStorage.setItem(TOKEN_KEY, token);
-   else localStorage.removeItem(TOKEN_KEY);
+async function getAuthToken(): Promise<string | null> {
+   const { data } = await supabase.auth.getSession();
+   return data.session?.access_token ?? null;
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -20,16 +15,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
    if (!headers.has("Content-Type") && options.body) {
       headers.set("Content-Type", "application/json");
    }
-   const token = getToken();
+   const token = await getAuthToken();
    if (token) headers.set("Authorization", `Bearer ${token}`);
 
    const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
-   if (res.status === 401) {
-      setToken(null);
-      throw new ApiError(401, "Unauthorized");
-   }
-
+   if (res.status === 401) throw new ApiError(401, "Unauthorized");
    if (res.status === 204) return undefined as T;
 
    const data = res.headers.get("content-type")?.includes("application/json")
@@ -50,23 +41,11 @@ export class ApiError extends Error {
    }
 }
 
-export const api = {
-   register(email: string, password: string) {
-      return request<AuthResponse>("/api/auth/register", {
-         method: "POST",
-         body: JSON.stringify({ email, password }),
-      });
-   },
-   login(email: string, password: string) {
-      return request<AuthResponse>("/api/auth/login", {
-         method: "POST",
-         body: JSON.stringify({ email, password }),
-      });
-   },
-   me() {
-      return request<{ user: User }>("/api/auth/me");
-   },
+// Auth methods (register/login/me) live on supabase.auth via lib/auth.tsx now.
+// Endpoints below still hit Express until each Phase 2 sub-task migrates them
+// to direct supabase-js queries or (Phase 3) Deno Edge Functions.
 
+export const api = {
    listGoals() {
       return request<{ goals: Goal[] }>("/api/goals");
    },
@@ -336,9 +315,8 @@ export const api = {
    },
 
    async parseSyllabus(input: { text?: string; file?: File }) {
-      const base = API_BASE;
       const headers = new Headers();
-      const token = getToken();
+      const token = await getAuthToken();
       if (token) headers.set("Authorization", `Bearer ${token}`);
       let body: BodyInit;
       if (input.file) {
@@ -350,7 +328,7 @@ export const api = {
          headers.set("Content-Type", "application/json");
          body = JSON.stringify({ text: input.text ?? "" });
       }
-      const res = await fetch(`${base}/api/syllabus/parse`, {
+      const res = await fetch(`${API_BASE}/api/syllabus/parse`, {
          method: "POST",
          headers,
          body,

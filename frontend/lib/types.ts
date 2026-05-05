@@ -1,7 +1,7 @@
 export type GoalStatus = "Active" | "Paused" | "Completed";
 
 export interface User {
-  id: number;
+  id: string;
   email: string;
   created_at: string;
 }
@@ -30,9 +30,4 @@ export interface StudySession {
   quality: SessionQuality | null;
   next_review_at: string | null;
   gcal_event_id?: string | null;
-}
-
-export interface AuthResponse {
-  token: string;
-  user: User;
 }
