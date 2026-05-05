@@ -1,5 +1,10 @@
 import { supabase } from "./supabase";
 import type { TablesUpdate } from "./database.types";
+import {
+   computeGamificationProfile,
+   type GamificationProfile,
+   type GamificationSession,
+} from "./gamification";
 import type { Goal, GoalStatus, SessionQuality, StudySession } from "./types";
 
 const API_BASE =
@@ -447,36 +452,24 @@ export const api = {
       };
    },
 
-   gamificationProfile() {
-      return request<{
-         level: number;
-         xp: number;
-         xp_into_level: number;
-         xp_for_next_level: number;
-         progress_to_next: number;
-         pet_stage:
-            | "seed"
-            | "sprout"
-            | "sapling"
-            | "young_tree"
-            | "mature_tree"
-            | "blooming";
-         current_streak_days: number;
-         longest_streak_days: number;
-         total_sessions: number;
-         total_minutes: number;
-         mastered_count: number;
-         achievements: {
-            id: string;
-            label: string;
-            description: string;
-            unlocked: boolean;
-         }[];
-      }>(
-         `/api/gamification/profile?tz=${encodeURIComponent(
-            Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-         )}`,
+   async gamificationProfile(): Promise<GamificationProfile> {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      // RLS filters both queries to the caller's own data.
+      const [sessionsRes, linksRes] = await Promise.all([
+         supabase
+            .from("study_sessions")
+            .select("id, duration_minutes, quality, logged_at"),
+         supabase.from("goal_subjects").select("subjects ( name )"),
+      ]);
+      if (sessionsRes.error) throw new ApiError(500, sessionsRes.error.message);
+      if (linksRes.error) throw new ApiError(500, linksRes.error.message);
+      const sessions: GamificationSession[] = sessionsRes.data ?? [];
+      const subjectNames = new Set<string>(
+         (linksRes.data ?? [])
+            .map((row: { subjects: { name: string } | null }) => row.subjects?.name)
+            .filter((n): n is string => typeof n === "string"),
       );
+      return computeGamificationProfile(sessions, subjectNames, tz);
    },
 
    googleStatus() {
