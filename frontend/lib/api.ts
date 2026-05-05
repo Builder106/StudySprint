@@ -317,10 +317,104 @@ async function deleteSessionImpl(sessionId: string): Promise<void> {
    if (error) throw new ApiError(500, error.message);
 }
 
-// Endpoints below still hit Express until each Phase 2 sub-task migrates them
-// to direct supabase-js queries (profile) or RPCs (analytics, gamification,
-// leaderboard, rooms) or — for secret-bearing routes — Deno Edge Functions
-// in Phase 3.
+// Phase 2.3c — own-profile read/update via direct Supabase queries.
+// Cross-user public profile (getProfile by username) stays on Express until
+// Phase 2.4 makes it an RPC (it needs aggregate access to another user's
+// study_goals/sessions, which RLS denies for direct queries).
+
+const USERNAME_RE = /^[a-z0-9_]{3,30}$/;
+
+interface MyProfileResult {
+   user: {
+      id: string;
+      email: string;
+      username: string | null;
+      display_name: string | null;
+      bio: string | null;
+      is_public: boolean;
+   };
+}
+
+async function getMyProfileImpl(): Promise<MyProfileResult> {
+   const { data: sessionData } = await supabase.auth.getSession();
+   const session = sessionData.session;
+   if (!session) throw new ApiError(401, "Not authenticated");
+
+   const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("username, display_name, bio, is_public")
+      .eq("id", session.user.id)
+      .single();
+   if (error) throw new ApiError(500, error.message);
+
+   return {
+      user: {
+         id: session.user.id,
+         email: session.user.email ?? "",
+         username: profile.username,
+         display_name: profile.display_name,
+         bio: profile.bio,
+         is_public: profile.is_public,
+      },
+   };
+}
+
+interface UpdateMyProfileInput {
+   username?: string;
+   display_name?: string | null;
+   bio?: string | null;
+   is_public?: boolean;
+}
+
+async function updateMyProfileImpl(
+   input: UpdateMyProfileInput,
+): Promise<MyProfileResult> {
+   const { data: sessionData } = await supabase.auth.getSession();
+   const session = sessionData.session;
+   if (!session) throw new ApiError(401, "Not authenticated");
+
+   const updates: TablesUpdate<"profiles"> = {};
+   if (input.username !== undefined) {
+      const normalized = input.username.toLowerCase();
+      if (!USERNAME_RE.test(normalized)) {
+         throw new ApiError(
+            400,
+            "Username must be 3-30 chars (lowercase letters, digits, underscore)",
+         );
+      }
+      updates.username = normalized;
+   }
+   if ("display_name" in input) updates.display_name = input.display_name ?? null;
+   if ("bio" in input) updates.bio = input.bio ?? null;
+   if ("is_public" in input) updates.is_public = !!input.is_public;
+
+   const { data: profile, error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("id", session.user.id)
+      .select("username, display_name, bio, is_public")
+      .single();
+   if (error) {
+      // 23505 = unique_violation (username already taken)
+      if (error.code === "23505") throw new ApiError(409, "Username is taken");
+      throw new ApiError(500, error.message);
+   }
+
+   return {
+      user: {
+         id: session.user.id,
+         email: session.user.email ?? "",
+         username: profile.username,
+         display_name: profile.display_name,
+         bio: profile.bio,
+         is_public: profile.is_public,
+      },
+   };
+}
+
+// Endpoints below still hit Express until Phase 2.4 makes them RPCs
+// (analytics, gamification, leaderboard, rooms, public profile lookup) or
+// Phase 3 makes them Deno Edge Functions (syllabus, integrations).
 
 export const api = {
    listGoals: listGoalsImpl,
@@ -435,38 +529,8 @@ export const api = {
       });
    },
 
-   getMyProfile() {
-      return request<{
-         user: {
-            id: string;
-            email: string;
-            username: string | null;
-            display_name: string | null;
-            bio: string | null;
-            is_public: boolean;
-         };
-      }>("/api/profiles/me");
-   },
-   updateMyProfile(input: {
-      username?: string;
-      display_name?: string | null;
-      bio?: string | null;
-      is_public?: boolean;
-   }) {
-      return request<{
-         user: {
-            id: string;
-            email: string;
-            username: string | null;
-            display_name: string | null;
-            bio: string | null;
-            is_public: boolean;
-         };
-      }>("/api/profiles/me", {
-         method: "PUT",
-         body: JSON.stringify(input),
-      });
-   },
+   getMyProfile: () => getMyProfileImpl(),
+   updateMyProfile: (input: UpdateMyProfileInput) => updateMyProfileImpl(input),
    getProfile(username: string) {
       return request<{
          user: { username: string; display_name: string; bio: string | null; joined_at: string };
