@@ -101,21 +101,26 @@ the suite to clear the login screen, so the suite ships with
 [`e2e/setup/bootstrap-demo.ts`](e2e/setup/bootstrap-demo.ts) which
 create-or-updates it and reseeds starter goals.
 
-Required env vars (for the bootstrap, **not** for the suite itself):
+Required env vars (loaded automatically from `.env`, no exports needed):
 
-```bash
-export SUPABASE_URL=https://<project-ref>.supabase.co
-export SUPABASE_SERVICE_ROLE_KEY=<service-role>   # Project Settings → API
-deno task test:setup
+```env
+# .env
+VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_...
+SUPABASE_SERVICE_ROLE_KEY=<service-role>   # only for test:setup
 ```
 
 The service-role key never leaves your machine — `bootstrap-demo.ts` is
 the only place that needs it, and it's not used by the running suite or
-the application itself. Don't commit it.
+the application itself. `.env` is gitignored.
 
-E2E tests themselves run with the publishable anon key only (read from
-`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` in your `.env`). The
-suite skips cleanup of registered users in scenarios that test sign-up;
+```bash
+deno task test:setup    # one-time per machine
+deno task test          # full suite — picks up .env automatically
+```
+
+E2E tests themselves run with the publishable anon key only. The suite
+skips cleanup of registered users in scenarios that test sign-up;
 periodically sweep them with:
 
 ```sql

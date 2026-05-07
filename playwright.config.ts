@@ -1,5 +1,20 @@
+import { existsSync, readFileSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 import { defineBddConfig } from "playwright-bdd";
+
+// Auto-load .env so step files + supabase helper pick up VITE_SUPABASE_URL
+// / VITE_SUPABASE_ANON_KEY without the user having to export them. .env is
+// gitignored, so values stay on the developer's machine. Existing process
+// env wins (CI overrides local .env).
+const envPath = new URL("./.env", import.meta.url).pathname;
+if (existsSync(envPath)) {
+  for (const line of readFileSync(envPath, "utf8").split("\n")) {
+    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*?)\s*$/);
+    if (m && process.env[m[1]] === undefined) {
+      process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+    }
+  }
+}
 
 const testDir = defineBddConfig({
   features: "e2e/features/**/*.feature",

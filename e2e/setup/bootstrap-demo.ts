@@ -9,7 +9,7 @@
 //
 // Usage: `deno task test:setup`
 //
-// Required env vars:
+// Required env vars (loaded automatically from `.env` if present):
 //   SUPABASE_URL              — same as VITE_SUPABASE_URL
 //   SUPABASE_SERVICE_ROLE_KEY — secret, never commit. Pull from the Supabase
 //                               dashboard under Project Settings → API.
@@ -17,6 +17,7 @@
 // Idempotent — safe to re-run. Run this once on each new dev machine + as
 // the first step in CI before invoking `deno task test`.
 
+import "jsr:@std/dotenv/load";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? Deno.env.get("VITE_SUPABASE_URL");
