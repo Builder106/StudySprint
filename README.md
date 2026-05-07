@@ -57,7 +57,7 @@ npm dependencies. Deno auto-creates a `node_modules/` directory when needed
 
 ```bash
 deno install                        # materialize node_modules from deno.json
-cp .env.example .env                # fill in VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY
+cp .env.example .env                # fill in VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY
 
 # One-time: link this repo to your Supabase project, push migrations,
 # deploy edge functions, and set their secrets.
@@ -89,7 +89,7 @@ is created automatically by an `auth.users` trigger.
 | Key | Description |
 |---|---|
 | `VITE_SUPABASE_URL` | Supabase project URL (from Project Settings → API) |
-| `VITE_SUPABASE_ANON_KEY` | Supabase publishable / anon key (safe to ship — RLS guards data) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`sb_publishable_…`) — safe to ship; RLS guards data |
 
 **Edge Functions** (set via `supabase secrets set ...`)
 

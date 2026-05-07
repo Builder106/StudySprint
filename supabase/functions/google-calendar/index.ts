@@ -13,7 +13,9 @@
 //   GOOGLE_CLIENT_SECRET  — OAuth client secret
 //   GOOGLE_REDIRECT_URI   — must point at this function's /callback path
 //   CLIENT_ORIGIN         — frontend origin (used for post-callback redirect)
-//   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (auto-injected)
+//   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+//     (auto-injected by the Edge Function runtime under legacy names even on
+//      projects using API Keys v2 — those names are fixed by the runtime)
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
@@ -33,10 +35,13 @@ function jsonResponse(body: unknown, status = 200): Response {
 async function authedUser(req: Request): Promise<{ userId: string; client: SupabaseClient } | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return null;
+  // Edge Function runtime auto-injects SUPABASE_URL + SUPABASE_ANON_KEY +
+  // SUPABASE_SERVICE_ROLE_KEY under those legacy names regardless of whether
+  // the project uses API Keys v2 (publishable / secret). Read what's injected.
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!supabaseUrl || !anonKey) throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY env vars");
-  const client = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+  const publishableKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !publishableKey) throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY env vars");
+  const client = createClient(supabaseUrl, publishableKey, { global: { headers: { Authorization: authHeader } } });
   const { data, error } = await client.auth.getUser();
   if (error || !data.user) return null;
   return { userId: data.user.id, client };
@@ -44,9 +49,9 @@ async function authedUser(req: Request): Promise<{ userId: string; client: Supab
 
 function serviceClient(): SupabaseClient {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !serviceKey) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars");
-  return createClient(supabaseUrl, serviceKey);
+  const secretKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !secretKey) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars");
+  return createClient(supabaseUrl, secretKey);
 }
 
 const SCOPES = ["https://www.googleapis.com/auth/calendar.events"];

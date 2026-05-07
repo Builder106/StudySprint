@@ -10,9 +10,11 @@
 // Usage: `deno task test:setup`
 //
 // Required env vars (loaded automatically from `.env` if present):
-//   SUPABASE_URL              — same as VITE_SUPABASE_URL
-//   SUPABASE_SERVICE_ROLE_KEY — secret, never commit. Pull from the Supabase
-//                               dashboard under Project Settings → API.
+//   SUPABASE_URL         — same as VITE_SUPABASE_URL
+//   SUPABASE_SECRET_KEY  — secret, never commit. Pull from the Supabase
+//                          dashboard under Project Settings → API Keys
+//                          (sb_secret_… prefix). Replaces the legacy
+//                          service_role JWT.
 //
 // Idempotent — safe to re-run. Run this once on each new dev machine + as
 // the first step in CI before invoking `deno task test`.
@@ -21,19 +23,19 @@ import "jsr:@std/dotenv/load";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? Deno.env.get("VITE_SUPABASE_URL");
-const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const SECRET_KEY = Deno.env.get("SUPABASE_SECRET_KEY");
 const DEMO_EMAIL = Deno.env.get("E2E_DEMO_EMAIL") ?? "demo@studysprint.app";
 const DEMO_PASSWORD = Deno.env.get("E2E_DEMO_PASSWORD") ?? "demo123";
 
-if (!SUPABASE_URL || !SERVICE_KEY) {
+if (!SUPABASE_URL || !SECRET_KEY) {
   console.error(
-    "bootstrap-demo: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.\n" +
-      "Pull them from the Supabase dashboard (Project Settings → API).",
+    "bootstrap-demo: SUPABASE_URL and SUPABASE_SECRET_KEY must be set.\n" +
+      "Pull them from the Supabase dashboard (Project Settings → API Keys).",
   );
   Deno.exit(1);
 }
 
-const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
+const admin = createClient(SUPABASE_URL, SECRET_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 

@@ -12,7 +12,7 @@ dependencies.
 
 ```bash
 deno install                        # materialize node_modules from deno.json
-cp .env.example .env                # fill VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY
+cp .env.example .env                # fill VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY
 deno task supabase:link             # link to your Supabase project
 deno task dev                       # frontend :5173 (Vite via Deno)
 ```
@@ -106,20 +106,20 @@ Required env vars (loaded automatically from `.env`, no exports needed):
 ```env
 # .env
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_...
-SUPABASE_SERVICE_ROLE_KEY=<service-role>   # only for test:setup
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…
+SUPABASE_SECRET_KEY=sb_secret_…   # only needed for test:setup
 ```
 
-The service-role key never leaves your machine — `bootstrap-demo.ts` is
-the only place that needs it, and it's not used by the running suite or
-the application itself. `.env` is gitignored.
+The secret key never leaves your machine — `bootstrap-demo.ts` is the
+only place that needs it, and it's not used by the running suite or the
+application itself. `.env` is gitignored.
 
 ```bash
 deno task test:setup    # one-time per machine
 deno task test          # full suite — picks up .env automatically
 ```
 
-E2E tests themselves run with the publishable anon key only. The suite
+E2E tests themselves run with the publishable key only. The suite
 skips cleanup of registered users in scenarios that test sign-up;
 periodically sweep them with:
 

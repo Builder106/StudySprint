@@ -27,10 +27,13 @@ function jsonResponse(body: unknown, status = 200): Response {
 async function authedUser(req: Request): Promise<{ userId: string; client: SupabaseClient } | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return null;
+  // Edge Function runtime auto-injects SUPABASE_URL + SUPABASE_ANON_KEY +
+  // SUPABASE_SERVICE_ROLE_KEY under those legacy names regardless of whether
+  // the project uses API Keys v2 (publishable / secret). Read what's injected.
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (!supabaseUrl || !anonKey) throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY env vars");
-  const client = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+  const publishableKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !publishableKey) throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY env vars");
+  const client = createClient(supabaseUrl, publishableKey, { global: { headers: { Authorization: authHeader } } });
   const { data, error } = await client.auth.getUser();
   if (error || !data.user) return null;
   return { userId: data.user.id, client };

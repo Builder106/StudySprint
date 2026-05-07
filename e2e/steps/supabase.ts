@@ -21,11 +21,12 @@ export function supabaseUrl(): string {
   return url.replace(/\/$/, "");
 }
 
-export function supabaseAnonKey(): string {
-  const key = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY;
+export function supabasePublishableKey(): string {
+  const key =
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   if (!key) {
     throw new Error(
-      "e2e: SUPABASE_ANON_KEY (or VITE_SUPABASE_ANON_KEY) is not set.",
+      "e2e: SUPABASE_PUBLISHABLE_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY) is not set.",
     );
   }
   return key;
@@ -79,7 +80,7 @@ export async function rest<T = unknown>(
   if (!token) throw new Error("e2e: no Supabase session in localStorage");
 
   const headers: Record<string, string> = {
-    apikey: supabaseAnonKey(),
+    apikey: supabasePublishableKey(),
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
   };
