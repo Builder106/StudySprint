@@ -21,7 +21,8 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"], ["./e2e/reporter.ts"]],
   use: {
-    baseURL: process.env.BASE_URL ?? "http://localhost:5173",
+    // See playwright.config.ts for why 127.0.0.1 instead of localhost.
+    baseURL: process.env.BASE_URL ?? "http://127.0.0.1:5173",
     headless: true,
     viewport: { width: 2560, height: 1600 },
     video: { mode: "on", size: { width: 2560, height: 1600 } },
@@ -31,7 +32,7 @@ export default defineConfig({
     ? undefined
     : {
         command: "deno task dev",
-        url: "http://localhost:5173",
+        url: "http://127.0.0.1:5173",
         reuseExistingServer: true,
         timeout: 30_000,
       },

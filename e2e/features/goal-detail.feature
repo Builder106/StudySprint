@@ -4,7 +4,7 @@ Feature: Goal Detail — Panel and Timer (#12, #16)
   So that I can track sessions and use the timer
 
   Background:
-    Given I am logged in as "demo@example.com" with password "demo123"
+    Given I am logged in as "demo@studysprint.app" with password "demo123"
     And I navigate to the first goal on the dashboard
 
   Scenario: Opening the slide-out details panel

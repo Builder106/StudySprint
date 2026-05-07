@@ -4,7 +4,7 @@ Feature: Study Sessions — Log and Validate (#19)
   So that my progress is tracked accurately
 
   Background:
-    Given I am logged in as "demo@example.com" with password "demo123"
+    Given I am logged in as "demo@studysprint.app" with password "demo123"
     And I navigate to the first goal on the dashboard
 
   # Issue #19 — Validation for session duration

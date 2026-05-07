@@ -4,7 +4,7 @@ Feature: Study Goals
   So that I can track my progress toward each learning target
 
   Background:
-    Given I am logged in as "demo@example.com" with password "demo123"
+    Given I am logged in as "demo@studysprint.app" with password "demo123"
 
   Scenario: Creating a new study goal with valid inputs
     When I navigate to the new goal page

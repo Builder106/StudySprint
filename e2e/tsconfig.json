@@ -6,5 +6,6 @@
     "module": "Node16",
     "allowImportingTsExtensions": false
   },
-  "include": ["./**/*.ts", "../playwright.config.ts"]
+  "include": ["./**/*.ts", "../playwright.config.ts"],
+  "exclude": ["./setup/**"]
 }

@@ -4,7 +4,7 @@ Feature: Dashboard Filtering and Sorting (#21)
   So that I can focus on the most relevant goals
 
   Background:
-    Given I am logged in as "demo@example.com" with password "demo123"
+    Given I am logged in as "demo@studysprint.app" with password "demo123"
     And I navigate to the dashboard
 
   Scenario: Filtering goals by Active status

@@ -1,5 +1,6 @@
 import { createBdd } from "playwright-bdd";
 import { expect } from "@playwright/test";
+import { getUserId, rest } from "./supabase";
 
 const { Given, When, Then } = createBdd();
 
@@ -51,7 +52,9 @@ When("I submit the new goal form", async ({ page }) => {
 
 Then("I should be redirected to the goal detail page", async ({ page }) => {
   await page.waitForURL("**/goal/**", { timeout: 10_000 });
-  expect(page.url()).toMatch(/\/goal\/\d+/);
+  // Goal IDs are UUIDs after the Supabase migration; just confirm the URL
+  // shape matches /goal/<some-non-empty-id>.
+  expect(page.url()).toMatch(/\/goal\/[a-zA-Z0-9-]+/);
 });
 
 Then(
@@ -94,14 +97,13 @@ Given(
     const uniqueTitle = `${title} ${Date.now()}`;
     resolvedTitles.set(title, uniqueTitle);
 
-    const token = await page.evaluate(() =>
-      localStorage.getItem("studysprint.token"),
-    );
-    const apiBase = process.env.API_URL ?? "http://localhost:4000";
-
-    await page.request.post(`${apiBase}/api/goals`, {
-      data: { title: uniqueTitle, target_hours: hours, status: "Active" },
-      headers: { Authorization: `Bearer ${token}` },
+    // Insert directly via Supabase REST using the user's JWT. study_goals.user_id
+    // is NOT NULL with no default, so we have to include it explicitly; the
+    // owner_all RLS policy enforces auth.uid() = user_id on INSERT.
+    const userId = await getUserId(page);
+    await rest(page, "/study_goals", {
+      method: "POST",
+      body: { user_id: userId, title: uniqueTitle, target_hours: hours, status: "Active" },
     });
   },
 );

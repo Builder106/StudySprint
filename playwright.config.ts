@@ -13,7 +13,10 @@ export default defineConfig({
   retries: 1,
   reporter: [["list"], ["./e2e/reporter.ts"]],
   use: {
-    baseURL: process.env.BASE_URL ?? "http://localhost:5173",
+    // 127.0.0.1 is intentional — `localhost` resolves to ::1 (IPv6) first on
+    // macOS, and Vite binds IPv4 only by default, so any other app already
+    // listening on ::1:5173 wins the lookup race.
+    baseURL: process.env.BASE_URL ?? "http://127.0.0.1:5173",
     headless: true,
     viewport: { width: 1280, height: 720 },
     screenshot: "only-on-failure",
@@ -25,7 +28,7 @@ export default defineConfig({
     ? undefined
     : {
         command: "deno task dev",
-        url: "http://localhost:5173",
+        url: "http://127.0.0.1:5173",
         reuseExistingServer: true,
         timeout: 30_000,
       },

@@ -50,6 +50,7 @@
     "npm:lucide-react@0.487.0": "0.487.0_react@18.3.1",
     "npm:motion@12.23.24": "12.23.24_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:next-themes@0.4.6": "0.4.6_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+    "npm:playwright-bdd@*": "8.5.0_@playwright+test@1.59.1",
     "npm:playwright-bdd@^8.5.0": "8.5.0_@playwright+test@1.59.1",
     "npm:react-day-picker@8.10.1": "8.10.1_date-fns@3.6.0_react@18.3.1",
     "npm:react-dnd-html5-backend@16.0.1": "16.0.1",

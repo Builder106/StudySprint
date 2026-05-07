@@ -1,11 +1,7 @@
 import { createBdd } from "playwright-bdd";
 import { expect } from "@playwright/test";
 
-const { Given, When, Then, After } = createBdd();
-
-// Tracks emails registered during the current scenario so the After hook can
-// delete them. Keyed by Playwright Page so parallel workers don't cross-talk.
-const registeredEmails = new WeakMap<object, string>();
+const { Given, When, Then } = createBdd();
 
 Given("I am on the StudySprint home page", async ({ page }) => {
   await page.goto("/");
@@ -20,63 +16,22 @@ When("I navigate to the registration page", async ({ page }) => {
 When(
   "I enter the email {string} and password {string}",
   async ({ page }, email: string, password: string) => {
-    // Demo records the literal email "example@example.com" — to keep that
-    // typing visible across re-runs without a timestamp suffix, pre-delete
-    // any existing account by logging in with the same credentials and
-    // hitting DELETE /api/auth/account. Best-effort; ignored if no row.
-    if (email === "example@example.com") {
-      const apiBase = process.env.API_URL ?? "http://localhost:4000";
-      try {
-        const loginRes = await page.request.post(`${apiBase}/api/auth/login`, {
-          data: { email, password },
-          failOnStatusCode: false,
-        });
-        if (loginRes.ok()) {
-          const { token } = await loginRes.json();
-          await page.request.delete(`${apiBase}/api/auth/account`, {
-            headers: { Authorization: `Bearer ${token}` },
-            failOnStatusCode: false,
-          });
-        }
-      } catch {
-        // best-effort cleanup
-      }
-      await page.fill('input[type="email"]', email);
-      await page.fill('input[type="password"]', password);
-      return;
-    }
-    // For other registration emails, append a run-unique suffix to avoid
-    // collisions across QA re-runs; the After hook deletes the row.
+    // The DEMO suite re-runs against the same `example@example.com` literal so
+    // the recorded video stays consistent. In production, that domain is on
+    // Supabase Auth's blocklist — but DEMO mode exists to record locally
+    // against a relaxed/mocked Supabase, so we still fill the literal here.
+    // For QA runs we append a timestamp suffix to non-deterministic emails so
+    // re-runs don't collide; cleanup of the resulting auth.users row requires
+    // service-role access which the e2e suite doesn't currently have, so the
+    // demo_signup_<ts>@... rows accumulate. Sweep them out periodically with:
+    //   delete from auth.users where email like 'demo_signup_%@studysprint.app';
     const uniqueEmail = email.startsWith("demo_signup")
       ? email.replace("@", `_${Date.now()}@`)
       : email;
-    if (uniqueEmail !== email) registeredEmails.set(page, uniqueEmail);
     await page.fill('input[type="email"]', uniqueEmail);
     await page.fill('input[type="password"]', password);
   },
 );
-
-After(async ({ page }) => {
-  const email = registeredEmails.get(page);
-  if (!email) return;
-  registeredEmails.delete(page);
-  // Skip cleanup in DEMO mode. The page.evaluate + page.request.delete here
-  // runs while Playwright is finalizing video for the first scenario, which
-  // can cause the video to be dropped. Demo runs are local-only — leave the
-  // demo_signup_<ts> row behind; manual `DELETE FROM users WHERE email LIKE
-  // 'demo_signup%'` is fine.
-  if (process.env.DEMO === "1") return;
-  try {
-    const token = await page.evaluate(() => localStorage.getItem("studysprint.token"));
-    if (!token) return;
-    const apiBase = process.env.API_URL ?? "http://localhost:4000";
-    await page.request.delete(`${apiBase}/api/auth/account`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  } catch {
-    // best-effort cleanup; leave the row if anything goes wrong
-  }
-});
 
 When("I submit the registration form", async ({ page }) => {
   await page.click('button[type="submit"]');
@@ -102,8 +57,9 @@ Then("I should remain on the registration page", async ({ page }) => {
 Given(
   "a registered account with email {string} and password {string}",
   async ({}, _email: string, _password: string) => {
-    // The demo account is provisioned out-of-band (Supabase Auth dashboard or
-    // a one-off `deno task` script). Nothing to provision in-test.
+    // The shared test account must exist in Supabase Auth before the suite
+    // runs — see CONTRIBUTING.md "Test fixtures" for the bootstrap script.
+    // No-op in-test; just a documentation hook for the .feature file.
   },
 );
 

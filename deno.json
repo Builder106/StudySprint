@@ -7,10 +7,11 @@
     "fmt": "deno fmt frontend supabase/functions",
     "lint": "deno lint frontend supabase/functions",
 
-    "test": "deno run -A npm:playwright-bdd && deno run -A npm:@playwright/test test",
+    "test": "node ./node_modules/.bin/bddgen && node ./node_modules/.bin/playwright test",
     "test:e2e": "deno task test",
-    "test:e2e:ui": "deno run -A npm:playwright-bdd && deno run -A npm:@playwright/test test --ui",
-    "demo": "DEMO=1 deno run -A npm:playwright-bdd --config playwright.demo.config.ts && DEMO=1 deno run -A npm:@playwright/test test --config playwright.demo.config.ts",
+    "test:e2e:ui": "node ./node_modules/.bin/bddgen && node ./node_modules/.bin/playwright test --ui",
+    "test:setup": "deno run -A e2e/setup/bootstrap-demo.ts",
+    "demo": "DEMO=1 node ./node_modules/.bin/bddgen --config playwright.demo.config.ts && DEMO=1 node ./node_modules/.bin/playwright test --config playwright.demo.config.ts",
 
     "supabase:link": "deno run -A npm:supabase link",
     "supabase:db:push": "deno run -A npm:supabase db push",

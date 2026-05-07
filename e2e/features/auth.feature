@@ -21,14 +21,14 @@ Feature: Authentication
     And I should remain on the registration page
 
   Scenario: Successful login with existing credentials
-    Given a registered account with email "demo@example.com" and password "demo123"
-    When I enter the email "demo@example.com" and password "demo123" on the login form
+    Given a registered account with email "demo@studysprint.app" and password "demo123"
+    When I enter the email "demo@studysprint.app" and password "demo123" on the login form
     And I click Sign in
     Then I should be redirected to the dashboard
 
   Scenario: Login fails with wrong password
-    Given a registered account with email "demo@example.com" and password "demo123"
-    When I enter the email "demo@example.com" and password "wrongpassword" on the login form
+    Given a registered account with email "demo@studysprint.app" and password "demo123"
+    When I enter the email "demo@studysprint.app" and password "wrongpassword" on the login form
     And I click Sign in
     Then I should see an error message on the login page
     And I should remain on the home page

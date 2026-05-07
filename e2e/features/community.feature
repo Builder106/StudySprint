@@ -4,7 +4,7 @@ Feature: Social Features — Study Rooms (#18)
   So that I can study with others
 
   Background:
-    Given I am logged in as "demo@example.com" with password "demo123"
+    Given I am logged in as "demo@studysprint.app" with password "demo123"
 
   Scenario: Creating a new study room
     When I navigate to the community page
