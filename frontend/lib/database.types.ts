@@ -310,6 +310,17 @@ export type Database = {
     }
     Functions: {
       analytics_summary: { Args: never; Returns: Json }
+      create_room: {
+        Args: { p_name: string; p_description?: string | null; p_passcode?: string | null }
+        Returns: Json
+      }
+      get_public_profile: { Args: { p_username: string }; Returns: Json }
+      get_room: { Args: { p_slug: string }; Returns: Json }
+      join_room: { Args: { p_slug: string; p_passcode?: string | null }; Returns: Json }
+      leaderboard: { Args: never; Returns: Json }
+      leave_room: { Args: { p_slug: string }; Returns: undefined }
+      list_my_rooms: { Args: never; Returns: Json }
+      reset_account: { Args: never; Returns: Json }
       set_goal_subjects: {
         Args: { p_goal_id: string; p_names: string[] }
         Returns: undefined

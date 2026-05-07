@@ -1,0 +1,19 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.105.3",
+    "unpdf": "https://esm.sh/unpdf@0.12.1"
+  },
+  "tasks": {
+    "fmt": "deno fmt .",
+    "lint": "deno lint .",
+    "check": "deno check syllabus-parse/index.ts google-calendar/index.ts"
+  },
+  "lock": false,
+  "fmt": {
+    "useTabs": false,
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "semiColons": true,
+    "singleQuote": false
+  }
+}

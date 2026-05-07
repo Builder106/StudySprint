@@ -7,9 +7,7 @@ import {
 } from "./gamification";
 import type { Goal, GoalStatus, SessionQuality, StudySession } from "./types";
 
-const API_BASE =
-   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
-   "http://localhost:4000";
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string).replace(/\/$/, "");
 
 async function getAuthToken(): Promise<string | null> {
    const { data } = await supabase.auth.getSession();
@@ -22,23 +20,30 @@ async function getUserId(): Promise<string> {
    return data.session.user.id;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+// Edge Function fetch — used for sub-route dispatch on `google-calendar` (the
+// Supabase JS `functions.invoke()` helper doesn't expose path/method overrides
+// cleanly, so we hit the function URL directly with the user's auth header).
+async function functionsFetch<T>(
+   path: string,
+   options: RequestInit = {},
+): Promise<T> {
    const headers = new Headers(options.headers);
-   if (!headers.has("Content-Type") && options.body) {
+   if (
+      options.body &&
+      !headers.has("Content-Type") &&
+      !(options.body instanceof FormData)
+   ) {
       headers.set("Content-Type", "application/json");
    }
    const token = await getAuthToken();
    if (token) headers.set("Authorization", `Bearer ${token}`);
 
-   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-
-   if (res.status === 401) throw new ApiError(401, "Unauthorized");
+   const res = await fetch(`${SUPABASE_URL}/functions/v1${path}`, { ...options, headers });
    if (res.status === 204) return undefined as T;
 
    const data = res.headers.get("content-type")?.includes("application/json")
       ? await res.json()
       : null;
-
    if (!res.ok) {
       throw new ApiError(res.status, data?.error || `Request failed (${res.status})`);
    }
@@ -417,9 +422,96 @@ async function updateMyProfileImpl(
    };
 }
 
-// Endpoints below still hit Express until Phase 2.4 makes them RPCs
-// (analytics, gamification, leaderboard, rooms, public profile lookup) or
-// Phase 3 makes them Deno Edge Functions (syllabus, integrations).
+// Phase 2.4 — cross-user reads (leaderboard, public profile) and study rooms
+// migrated to RPC functions (SECURITY DEFINER with explicit access checks).
+// Phase 3 — syllabus parser and Google Calendar integration migrated to
+// Supabase Edge Functions.
+
+interface AnalyticsResult {
+   daily: { date: string; minutes: number }[];
+   hourly: { hour: number; minutes: number }[];
+   weekday: { dow: number; minutes: number }[];
+   by_subject: { subject: string; minutes: number }[];
+   totals: {
+      minutes: number;
+      sessions_last_365: number;
+      current_streak_days: number;
+      longest_streak_days: number;
+   };
+}
+
+interface LeaderboardResult {
+   entries: { username: string; display_name: string | null; weekly_minutes: number }[];
+}
+
+interface PublicProfileResult {
+   user: {
+      username: string;
+      display_name: string;
+      bio: string | null;
+      joined_at: string;
+   };
+   stats: { total_minutes: number; total_sessions: number; total_goals: number };
+   recent_sessions: {
+      duration_minutes: number;
+      logged_at: string;
+      goal_title: string;
+   }[];
+}
+
+interface RoomSummary {
+   slug: string;
+   name: string;
+   description: string | null;
+   created_at: string;
+   has_passcode: boolean;
+   member_count: number;
+}
+
+interface RoomDetail {
+   room: {
+      slug: string;
+      name: string;
+      description: string | null;
+      created_at: string;
+      is_owner: boolean;
+      has_passcode: boolean;
+   };
+   members: {
+      username: string | null;
+      display_name: string | null;
+      is_public: boolean;
+      joined_at: string;
+   }[];
+   recent_activity: {
+      id: string;
+      duration_minutes: number;
+      logged_at: string;
+      username: string | null;
+      display_name: string | null;
+      goal_title: string;
+   }[];
+}
+
+// PostgREST surfaces RAISE EXCEPTION text on the .error.message field. A few
+// of our RPCs encode small status hints into the message (e.g. NOT_MEMBER:true)
+// so this helper translates them back into ApiError shapes the UI already
+// knows how to handle.
+function rpcError(message: string): ApiError {
+   if (message.startsWith("NOT_MEMBER:")) {
+      const hasPasscode = message.endsWith(":true");
+      const err = new ApiError(403, "You are not a member of this room. Join first.");
+      (err as ApiError & { hasPasscode?: boolean }).hasPasscode = hasPasscode;
+      return err;
+   }
+   if (message === "Profile not found" || message === "Room not found") {
+      return new ApiError(404, message);
+   }
+   if (message === "Incorrect passcode") return new ApiError(401, message);
+   if (message === "Not authenticated") return new ApiError(401, message);
+   if (message.startsWith("Name must")) return new ApiError(400, message);
+   return new ApiError(500, message);
+}
 
 export const api = {
    listGoals: listGoalsImpl,
@@ -435,21 +527,10 @@ export const api = {
       updateSessionImpl(sessionId, input),
    deleteSession: (sessionId: string) => deleteSessionImpl(sessionId),
 
-   async analyticsSummary() {
+   async analyticsSummary(): Promise<AnalyticsResult> {
       const { data, error } = await supabase.rpc("analytics_summary");
       if (error) throw new ApiError(500, error.message);
-      return data as unknown as {
-         daily: { date: string; minutes: number }[];
-         hourly: { hour: number; minutes: number }[];
-         weekday: { dow: number; minutes: number }[];
-         by_subject: { subject: string; minutes: number }[];
-         totals: {
-            minutes: number;
-            sessions_last_365: number;
-            current_streak_days: number;
-            longest_streak_days: number;
-         };
-      };
+      return data as unknown as AnalyticsResult;
    },
 
    async gamificationProfile(): Promise<GamificationProfile> {
@@ -473,21 +554,21 @@ export const api = {
    },
 
    googleStatus() {
-      return request<{ configured: boolean; connected: boolean }>(
-         "/api/integrations/google/status",
+      return functionsFetch<{ configured: boolean; connected: boolean }>(
+         "/google-calendar/status",
       );
    },
    googleAuthUrl() {
-      return request<{ url: string }>("/api/integrations/google/auth-url", {
+      return functionsFetch<{ url: string }>("/google-calendar/auth-url", {
          method: "POST",
       });
    },
    googleDisconnect() {
-      return request<void>("/api/integrations/google", { method: "DELETE" });
+      return functionsFetch<void>("/google-calendar/", { method: "DELETE" });
    },
    googleExportSession(sessionId: string) {
-      return request<{ event_id: string; html_link: string }>(
-         `/api/integrations/google/export-session/${sessionId}`,
+      return functionsFetch<{ event_id: string; html_link: string }>(
+         `/google-calendar/export-session/${sessionId}`,
          { method: "POST" },
       );
    },
@@ -496,7 +577,7 @@ export const api = {
       if (opts?.from) qs.set("from", opts.from);
       if (opts?.to) qs.set("to", opts.to);
       const suffix = qs.toString() ? `?${qs.toString()}` : "";
-      return request<{
+      return functionsFetch<{
          events: {
             id: string;
             summary: string;
@@ -506,120 +587,91 @@ export const api = {
             html_link: string;
             imported: { session_id: string; goal_id: string; goal_title: string } | null;
          }[];
-      }>(`/api/integrations/google/upcoming-events${suffix}`);
+      }>(`/google-calendar/upcoming-events${suffix}`);
    },
    googleImportEvent(eventId: string, goalId: string) {
-      return request<{ session: StudySession }>(
-         "/api/integrations/google/import-event",
-         {
-            method: "POST",
-            body: JSON.stringify({ event_id: eventId, goal_id: goalId }),
-         },
-      );
+      return functionsFetch<{ session: StudySession }>("/google-calendar/import-event", {
+         method: "POST",
+         body: JSON.stringify({ event_id: eventId, goal_id: goalId }),
+      });
    },
 
-   resetAccount() {
-      return request<{ ok: boolean; message: string }>("/api/admin/reset", {
-         method: "POST",
-      });
+   async resetAccount(): Promise<{ ok: boolean; message: string }> {
+      const { data, error } = await supabase.rpc("reset_account");
+      if (error) throw rpcError(error.message);
+      return data as { ok: boolean; message: string };
    },
 
    getMyProfile: () => getMyProfileImpl(),
    updateMyProfile: (input: UpdateMyProfileInput) => updateMyProfileImpl(input),
-   getProfile(username: string) {
-      return request<{
-         user: { username: string; display_name: string; bio: string | null; joined_at: string };
-         stats: { total_minutes: number; total_sessions: number; total_goals: number };
-         recent_sessions: { duration_minutes: number; logged_at: string; goal_title: string }[];
-      }>(`/api/profiles/${encodeURIComponent(username)}`);
-   },
-   leaderboard() {
-      return request<{
-         entries: { username: string; display_name: string | null; weekly_minutes: number }[];
-      }>("/api/leaderboard");
-   },
-   listRooms() {
-      return request<{
-         rooms: {
-            slug: string;
-            name: string;
-            description: string | null;
-            created_at: string;
-            has_passcode: boolean;
-            member_count: number;
-         }[];
-      }>("/api/rooms");
-   },
-   createRoom(input: { name: string; description?: string; passcode?: string }) {
-      return request<{ slug: string }>("/api/rooms", {
-         method: "POST",
-         body: JSON.stringify(input),
+
+   async getProfile(username: string): Promise<PublicProfileResult> {
+      const { data, error } = await supabase.rpc("get_public_profile", {
+         p_username: username,
       });
+      if (error) throw rpcError(error.message);
+      return data as unknown as PublicProfileResult;
    },
-   getRoom(slug: string) {
-      return request<{
-         room: {
-            slug: string;
-            name: string;
-            description: string | null;
-            created_at: string;
-            is_owner: boolean;
-            has_passcode: boolean;
-         };
-         members: {
-            username: string | null;
-            display_name: string | null;
-            is_public: boolean;
-            joined_at: string;
-         }[];
-         recent_activity: {
-            id: string;
-            duration_minutes: number;
-            logged_at: string;
-            username: string | null;
-            display_name: string | null;
-            goal_title: string;
-         }[];
-      }>(`/api/rooms/${encodeURIComponent(slug)}`);
+
+   async leaderboard(): Promise<LeaderboardResult> {
+      const { data, error } = await supabase.rpc("leaderboard");
+      if (error) throw rpcError(error.message);
+      return data as unknown as LeaderboardResult;
    },
-   joinRoom(slug: string, passcode?: string) {
-      return request<{ ok: boolean }>(`/api/rooms/${encodeURIComponent(slug)}/join`, {
-         method: "POST",
-         body: JSON.stringify({ passcode }),
+
+   async listRooms(): Promise<{ rooms: RoomSummary[] }> {
+      const { data, error } = await supabase.rpc("list_my_rooms");
+      if (error) throw rpcError(error.message);
+      return data as unknown as { rooms: RoomSummary[] };
+   },
+
+   async createRoom(input: {
+      name: string;
+      description?: string;
+      passcode?: string;
+   }): Promise<{ slug: string }> {
+      const { data, error } = await supabase.rpc("create_room", {
+         p_name: input.name,
+         p_description: input.description ?? null,
+         p_passcode: input.passcode ?? null,
       });
+      if (error) throw rpcError(error.message);
+      return data as unknown as { slug: string };
    },
-   leaveRoom(slug: string) {
-      return request<void>(`/api/rooms/${encodeURIComponent(slug)}/leave`, {
-         method: "POST",
+
+   async getRoom(slug: string): Promise<RoomDetail> {
+      const { data, error } = await supabase.rpc("get_room", { p_slug: slug });
+      if (error) throw rpcError(error.message);
+      return data as unknown as RoomDetail;
+   },
+
+   async joinRoom(slug: string, passcode?: string): Promise<{ ok: boolean }> {
+      const { data, error } = await supabase.rpc("join_room", {
+         p_slug: slug,
+         p_passcode: passcode ?? null,
       });
+      if (error) throw rpcError(error.message);
+      return data as unknown as { ok: boolean };
+   },
+
+   async leaveRoom(slug: string): Promise<void> {
+      const { error } = await supabase.rpc("leave_room", { p_slug: slug });
+      if (error) throw rpcError(error.message);
    },
 
    async parseSyllabus(input: { text?: string; file?: File }) {
-      const headers = new Headers();
-      const token = await getAuthToken();
-      if (token) headers.set("Authorization", `Bearer ${token}`);
       let body: BodyInit;
+      const headers: Record<string, string> = {};
       if (input.file) {
          const form = new FormData();
          form.append("pdf", input.file);
          if (input.text) form.append("text", input.text);
          body = form;
       } else {
-         headers.set("Content-Type", "application/json");
+         headers["Content-Type"] = "application/json";
          body = JSON.stringify({ text: input.text ?? "" });
       }
-      const res = await fetch(`${API_BASE}/api/syllabus/parse`, {
-         method: "POST",
-         headers,
-         body,
-      });
-      const data = res.headers.get("content-type")?.includes("application/json")
-         ? await res.json()
-         : null;
-      if (!res.ok) {
-         throw new ApiError(res.status, data?.error || `Request failed (${res.status})`);
-      }
-      return data as {
+      return functionsFetch<{
          goals: {
             title: string;
             description: string;
@@ -628,6 +680,6 @@ export const api = {
             subjects: string[];
          }[];
          model: string;
-      };
+      }>("/syllabus-parse", { method: "POST", headers, body });
    },
 };

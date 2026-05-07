@@ -14,10 +14,16 @@ export function GoogleCalendarBadge({ onChange }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Google Calendar integration is gated off during the Supabase migration.
-    // Re-enabled in Phase 3 as a Supabase Edge Function.
-    setStatus({ configured: false, connected: false });
-    onChange?.(false);
+    api
+      .googleStatus()
+      .then((s) => {
+        setStatus(s);
+        onChange?.(s.connected);
+      })
+      .catch(() => {
+        setStatus({ configured: false, connected: false });
+        onChange?.(false);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
