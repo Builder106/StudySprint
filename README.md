@@ -2,7 +2,7 @@
 
 A study tracker that turns focus sessions into a growing garden. Set goals, run a focus timer, watch plants grow with time logged, and compare streaks on a public leaderboard.
 
-**Live app:** https://studysprint-frontend.onrender.com · **Demo account:** `demo@example.com` / `demo123`
+**Live app:** https://getstudysprint.vercel.app
 
 <!-- Replace this with a hero screenshot or GIF (recommended: 960px wide). -->
 <!-- ![StudySprint dashboard](docs/hero.png) -->
