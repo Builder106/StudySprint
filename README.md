@@ -70,15 +70,17 @@ Also: **Google Calendar integration** (export sessions, import events) via a ded
 ## Architecture
 
 ```
-frontend/  React + Vite SPA
-  app/components/   page-level components (Dashboard, Garden, StudyRoom, ...)
-  lib/              Supabase client, API wrappers, hooks, utilities
+frontend/                   React + Vite SPA
+├── app/components/         Page-level components (Dashboard, Garden, StudyRoom, …)
+└── lib/                    Supabase client, API wrappers, hooks, utilities
+
 supabase/
-  migrations/       SQL schema, views, and RPC definitions
-  functions/        Deno Edge Functions
-    syllabus-parse/   syllabus → structured goals via OpenRouter
-    google-calendar/  OAuth + Calendar export/import
-e2e/       Playwright + Gherkin BDD suite (QA + demo-recording configs)
+├── migrations/             SQL schema, views, RPC definitions
+└── functions/              Deno Edge Functions
+    ├── syllabus-parse/     Syllabus → structured goals via OpenRouter
+    └── google-calendar/    OAuth + Calendar export/import
+
+e2e/                        Playwright + Gherkin BDD suite (QA + demo configs)
 ```
 
 `backend/` (Express + node-postgres) is retained for reference only — every
