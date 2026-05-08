@@ -1,3 +1,4 @@
+import "./e2e/setup/load-env";
 import { defineConfig, devices } from "@playwright/test";
 import { defineBddConfig } from "playwright-bdd";
 

@@ -1,25 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import "./e2e/setup/load-env";
 import { defineConfig, devices } from "@playwright/test";
 import { defineBddConfig } from "playwright-bdd";
-
-// Auto-load .env so step files + supabase helper pick up VITE_SUPABASE_URL
-// / VITE_SUPABASE_PUBLISHABLE_KEY without the user having to export them.
-// .env is gitignored, so values stay on the developer's machine. Existing
-// process env wins (CI overrides local .env).
-//
-// fileURLToPath handles paths with spaces / parens (e.g. macOS Drive
-// folders like "My Drive (user@x.edu)") that .pathname leaves percent-
-// encoded — existsSync would otherwise miss the file silently.
-const envPath = fileURLToPath(new URL("./.env", import.meta.url));
-if (existsSync(envPath)) {
-  for (const line of readFileSync(envPath, "utf8").split("\n")) {
-    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*?)\s*$/);
-    if (m && process.env[m[1]] === undefined) {
-      process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
-    }
-  }
-}
 
 const testDir = defineBddConfig({
   features: "e2e/features/**/*.feature",
