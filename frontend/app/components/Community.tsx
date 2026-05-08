@@ -376,9 +376,10 @@ export function Community() {
               ))}
               <button
                 onClick={() => setShowCreateRoom(true)}
+                aria-label="Add another room"
                 className="p-5 rounded-xl border-2 border-dashed border-zinc-200 dark:border-white/10 hover:border-[#ccff00] hover:bg-[#ccff00]/5 transition-colors flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-[#ccff00]"
               >
-                <Plus className="w-4 h-4" /> New room
+                <Plus className="w-4 h-4" /> Add another room
               </button>
             </div>
           )}

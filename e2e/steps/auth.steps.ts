@@ -38,24 +38,38 @@ When(
 async function wipeUserByEmail(email: string): Promise<void> {
   const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
   const secret = process.env.SUPABASE_SECRET_KEY;
-  if (!url || !secret) return; // best-effort; demo can fail loudly later if needed
-  try {
-    const list = await fetch(
-      `${url}/auth/v1/admin/users?filter=${encodeURIComponent(email)}`,
-      { headers: { apikey: secret, Authorization: `Bearer ${secret}` } },
-    );
-    if (!list.ok) return;
-    const { users } = (await list.json()) as { users: Array<{ id: string; email?: string }> };
-    const target = email.toLowerCase();
+  if (!url || !secret) {
+    console.warn(`[demo] wipeUserByEmail(${email}): SUPABASE_SECRET_KEY missing, skipping`);
+    return;
+  }
+
+  const headers = { apikey: secret, Authorization: `Bearer ${secret}` };
+  const target = email.toLowerCase();
+
+  // The Supabase admin /users endpoint doesn't support a server-side email
+  // filter — paginate through everything and match locally. 200 per page is
+  // the documented max; for a project with <200 users this is one round-trip.
+  for (let page = 1; page < 20; page++) {
+    const list = await fetch(`${url}/auth/v1/admin/users?page=${page}&per_page=200`, { headers });
+    if (!list.ok) {
+      console.warn(`[demo] listUsers page=${page} ${list.status}: ${await list.text()}`);
+      return;
+    }
+    const data = (await list.json()) as {
+      users?: Array<{ id: string; email?: string | null }>;
+    };
+    const users = data.users ?? [];
     for (const u of users) {
       if (u.email?.toLowerCase() !== target) continue;
-      await fetch(`${url}/auth/v1/admin/users/${u.id}`, {
+      const del = await fetch(`${url}/auth/v1/admin/users/${u.id}`, {
         method: "DELETE",
-        headers: { apikey: secret, Authorization: `Bearer ${secret}` },
+        headers,
       });
+      if (!del.ok) {
+        console.warn(`[demo] deleteUser ${u.id} ${del.status}: ${await del.text()}`);
+      }
     }
-  } catch {
-    // best-effort
+    if (users.length < 200) break; // last page
   }
 }
 
