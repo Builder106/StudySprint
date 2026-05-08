@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>StudySprint — Social Card</title>
+<!--
+  GitHub social preview card for the StudySprint repo.
+  Target dimensions: 1280×640 (GitHub recommended), 40pt safe-area border.
+
+  How to render:
+    1) Open this file in Chrome (or any modern browser).
+    2) DevTools → Toggle device toolbar → Responsive → set 1280×640, DPR 2.
+    3) Screenshot the rendered .card element only:
+       - DevTools → ⋮ → "Capture node screenshot" on <div class="card">.
+    4) Upload the PNG at:
+       https://github.com/Builder106/StudySprint/settings → Social preview.
+
+  Edit the headline / tagline / URL strings below if any of them change.
+-->
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --fg: #fafafa;
+    --muted: #a1a1aa;
+    --accent: #ccff00;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: #1a0a0a;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  .card {
+    width: 1280px;
+    height: 640px;
+    background: var(--bg);
+    color: var(--fg);
+    padding: 80px;             /* 40pt @ 2x = 80px safe area */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Subtle radial highlight in the corner — adds depth without competing
+     with the typography. Matches the lime accent at 8% opacity. */
+  .card::before {
+    content: "";
+    position: absolute;
+    top: -200px;
+    right: -200px;
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(204, 255, 0, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+
+  .logo {
+    width: 96px;
+    height: 96px;
+    border-radius: 24px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo svg { width: 56px; height: 56px; }
+
+  .wordmark {
+    font-size: 56px;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  .tagline {
+    font-size: 64px;
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    max-width: 1000px;
+  }
+
+  .tagline .accent { color: var(--accent); }
+
+  .bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 28px;
+    font-weight: 500;
+  }
+
+  .url {
+    color: var(--accent);
+    font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+    font-size: 28px;
+    letter-spacing: -0.01em;
+  }
+
+  .pills {
+    display: flex;
+    gap: 12px;
+  }
+
+  .pill {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    padding: 10px 20px;
+    font-size: 22px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="top">
+      <div class="logo">
+        <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <path d="M23 7L12 22H19.5L17 33L28 18H20.5L23 7Z" fill="#0a0a0a" />
+        </svg>
+      </div>
+      <div class="wordmark">StudySprint</div>
+    </div>
+
+    <div class="tagline">
+      Plan goals. Track time.<br>
+      <span class="accent">Study smarter.</span>
+    </div>
+
+    <div class="bottom">
+      <div class="url">getstudysprint.vercel.app</div>
+      <div class="pills">
+        <div class="pill">React</div>
+        <div class="pill">Supabase</div>
+        <div class="pill">Deno</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

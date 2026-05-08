@@ -16,6 +16,7 @@
     "demo:light": "DEMO=1 DEMO_THEME=light node ./node_modules/.bin/bddgen --config playwright.demo.config.ts && DEMO=1 DEMO_THEME=light node ./node_modules/.bin/playwright test --config playwright.demo.config.ts",
     "demo:both": "deno task demo && deno task demo:light",
     "gif": "deno run -A scripts/videos-to-gifs.ts",
+    "social-card": "deno run -A scripts/render-social-card.ts",
 
     "supabase:link": "deno run -A npm:supabase link",
     "supabase:db:push": "deno run -A npm:supabase db push",
