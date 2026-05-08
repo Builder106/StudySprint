@@ -13,7 +13,9 @@
 import { ensureDir } from "jsr:@std/fs";
 import { basename, extname } from "jsr:@std/path";
 
-const SRC_DIR = "videos";
+// e2e/reporter.ts writes the demo mp4s here. test-results/ is gitignored
+// so the sources aren't committed; the rendered gifs in OUT_DIR are.
+const SRC_DIR = "test-results/videos";
 const OUT_DIR = "docs/gifs";
 const FPS = Number(Deno.env.get("GIF_FPS") ?? "10");
 const WIDTH = Number(Deno.env.get("GIF_WIDTH") ?? "960");
