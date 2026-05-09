@@ -19,6 +19,11 @@ export default defineConfig({
       "@": path.resolve(root, "./frontend"),
     },
   },
+  build: {
+    rollupOptions: {
+      external: ["@vercel/analytics", "@vercel/analytics/react"],
+    },
+  },
 
   // Static assets live under frontend/public, not the Vite default of ./public.
   // Without this override the favicon at /logo.svg would 404.
