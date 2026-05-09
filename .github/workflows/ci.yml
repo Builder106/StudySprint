@@ -119,6 +119,8 @@ jobs:
       VERCEL_PROJECT_ID: prj_45WW8wwWB3Q3DtJPCpaktowmI66l
     steps:
       - uses: actions/checkout@v4
+      - name: Pull project settings
+        run: npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - name: Build
         run: npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy
