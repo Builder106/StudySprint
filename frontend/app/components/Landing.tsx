@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { ArrowRight, Sun, Moon, Github } from "lucide-react";
+import { ArrowRight, Sun, Moon, Github, Monitor } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useTheme } from "next-themes";
@@ -10,11 +10,12 @@ import { GoogleSignInButton } from "./shared/GoogleSignInButton";
 export function Landing() {
   const navigate = useNavigate();
   const { user, login } = useAuth();
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme, theme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
 
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
@@ -53,13 +54,58 @@ export function Landing() {
             <Github className="w-4 h-4" />
             <span className="hidden sm:inline">GitHub</span>
           </a>
-          <button
-            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-            aria-label="Toggle theme"
-            className="p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors"
-          >
-            {resolvedTheme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowThemeMenu(!showThemeMenu)}
+              aria-label="Theme settings"
+              className="p-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-50 transition-colors"
+            >
+              {theme === "system" ? (
+                <Monitor className="w-4 h-4" />
+              ) : resolvedTheme === "dark" ? (
+                <Moon className="w-4 h-4" />
+              ) : (
+                <Sun className="w-4 h-4" />
+              )}
+            </button>
+            {showThemeMenu && (
+              <div className="absolute right-0 mt-2 w-48 rounded-lg border border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-950 shadow-lg z-50">
+                <button
+                  onClick={() => {
+                    setTheme("system");
+                    setShowThemeMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-3 text-sm text-zinc-900 dark:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors flex items-center gap-2 border-b border-zinc-200 dark:border-white/10 first:rounded-t-lg"
+                >
+                  <Monitor className="w-4 h-4" />
+                  System
+                  {theme === "system" && <span className="ml-auto text-[#ccff00]">✓</span>}
+                </button>
+                <button
+                  onClick={() => {
+                    setTheme("light");
+                    setShowThemeMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-3 text-sm text-zinc-900 dark:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors flex items-center gap-2 border-b border-zinc-200 dark:border-white/10"
+                >
+                  <Sun className="w-4 h-4" />
+                  Light
+                  {theme === "light" && <span className="ml-auto text-[#ccff00]">✓</span>}
+                </button>
+                <button
+                  onClick={() => {
+                    setTheme("dark");
+                    setShowThemeMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-3 text-sm text-zinc-900 dark:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors flex items-center gap-2 last:rounded-b-lg"
+                >
+                  <Moon className="w-4 h-4" />
+                  Dark
+                  {theme === "dark" && <span className="ml-auto text-[#ccff00]">✓</span>}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
