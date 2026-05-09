@@ -108,3 +108,18 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 14
+
+  deploy:
+    name: Deploy to Production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [e2e]
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: team_QBH0412lFDlXgxDpQuY75YAp
+      VERCEL_PROJECT_ID: prj_45WW8wwWB3Q3DtJPCpaktowmI66l
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy
+        run: npx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
