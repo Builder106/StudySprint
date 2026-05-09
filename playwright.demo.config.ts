@@ -25,8 +25,8 @@ export default defineConfig({
     // See playwright.config.ts for why 127.0.0.1 instead of localhost.
     baseURL: process.env.BASE_URL ?? "http://127.0.0.1:5173",
     headless: true,
-    viewport: { width: 2560, height: 1600 },
-    video: { mode: "on", size: { width: 2560, height: 1600 } },
+    viewport: { width: 1440, height: 900 },
+    video: { mode: "on", size: { width: 1440, height: 900 } },
     launchOptions: { slowMo },
   },
   webServer: process.env.BASE_URL ? undefined : {
@@ -40,8 +40,8 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        viewport: { width: 2560, height: 1600 },
-        video: { mode: "on", size: { width: 2560, height: 1600 } },
+        viewport: { width: 1440, height: 900 },
+        video: { mode: "on", size: { width: 1440, height: 900 } },
       },
     },
   ],
