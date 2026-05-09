@@ -1,0 +1,28 @@
+sequenceDiagram
+    actor User
+    participant App as StudySprint
+    participant DB as Supabase
+
+    User->>App: Register / sign in
+    App->>DB: auth.signUp / signInWithPassword
+    DB-->>App: session token
+    App-->>User: Dashboard
+
+    User->>App: Create goal
+    App->>DB: goals.insert(title, subject, targetHours)
+    DB-->>App: goal row
+
+    User->>App: Start focus timer
+    App-->>User: Stopwatch / Pomodoro running
+
+    User->>App: Log session
+    App->>DB: sessions.insert(goalId, duration, subject)
+    DB->>DB: update_streak() trigger
+    DB->>DB: upsert garden plant
+    DB-->>App: updated streak + plant stage
+    App-->>User: Garden grows, streak updated
+
+    User->>App: View analytics
+    App->>DB: analytics_summary(userId) RPC
+    DB-->>App: heatmap, subject breakdown, streaks
+    App-->>User: Analytics dashboard

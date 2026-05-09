@@ -24,6 +24,11 @@ A study tracker that turns focus sessions into a growing garden. Set goals, run 
   <img alt="StudySprint — register, set a goal, log a session, watch the garden grow" src="docs/gifs/01-core-new-student-registers-and-logs-their-first-session-dark.gif">
 </picture>
 
+## Core loop, end-to-end
+
+![Core loop sequence diagram — dark](docs/core-loop-dark.svg#gh-dark-mode-only)
+![Core loop sequence diagram — light](docs/core-loop-light.svg#gh-light-mode-only)
+
 ## Features
 
 <details>
