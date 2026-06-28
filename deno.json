@@ -76,7 +76,7 @@
     "react-hook-form": "npm:react-hook-form@7.80.0",
     "react-markdown": "npm:react-markdown@10.1.0",
     "react-popper": "npm:react-popper@2.3.0",
-    "react-resizable-panels": "npm:react-resizable-panels@4.11.0",
+    "react-resizable-panels": "npm:react-resizable-panels@2.1.7",
     "react-responsive-masonry": "npm:react-responsive-masonry@2.7.2",
     "react-router": "npm:react-router@8.0.1",
     "react-slick": "npm:react-slick@0.31.0",
