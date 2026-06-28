@@ -49,17 +49,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: denoland/setup-deno@v2
+      - uses: actions/setup-node@v4
         with:
-          deno-version: v2.x
+          node-version: "24"
       - name: Install deps
-        run: deno install --allow-scripts=npm:@tailwindcss/oxide
+        # package.json mirrors deno.json for Node/Vercel build environments.
+        # Deno's npm runtime has a require.resolve incompatibility with
+        # @tailwindcss/node on Linux; Node avoids this entirely.
+        run: npm install --legacy-peer-deps
       - name: Build
         # Vite inlines VITE_* values at build time. CI builds with placeholders
         # so we can verify "is this buildable?" without exposing real keys to
         # PR forks. The deployed bundle is built locally with real .env values
         # via `vercel --prod --yes`.
-        run: deno task build
+        run: npm run build
         env:
           VITE_SUPABASE_URL: https://placeholder.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder
