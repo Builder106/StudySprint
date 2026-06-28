@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { ArrowRight, Sun, Moon, Github, Monitor } from "lucide-react";
+import { ArrowRight, Sun, Moon, ExternalLink, Monitor } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useTheme } from "next-themes";
@@ -51,7 +51,7 @@ export function Landing() {
             className="flex items-center gap-2 px-4 py-2 rounded-full border border-zinc-300 dark:border-white/20 text-zinc-700 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-white/30 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors text-sm font-medium"
             aria-label="GitHub repository"
           >
-            <Github className="w-4 h-4" />
+            <ExternalLink className="w-4 h-4" />
             <span className="hidden sm:inline">GitHub</span>
           </a>
           <div className="relative">
